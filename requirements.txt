@@ -1,0 +1,5 @@
+flask
+insightface==0.7.4
+onnxruntime
+opencv-python
+numpy

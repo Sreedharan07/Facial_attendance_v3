@@ -1,0 +1,2355 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionAttend AI · Attendance Management Dashboard</title>
+
+  <!-- Preconnect and Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <!-- Lucide Icons & Chart.js CDNs -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Clean SaaS Design System -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+  <div class="app-shell" id="app-shell">
+
+    <!-- ======================================================================
+       1. COLLAPSIBLE LEFT SIDEBAR
+       ====================================================================== -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <!-- Sidebar Header / Brand -->
+      <div class="sidebar-header">
+        <a href="#" class="sidebar-logo" onclick="navigateTo('dashboard'); return false;">
+          <div class="logo-icon-box">
+            <i data-lucide="scan-face"></i>
+          </div>
+          <div class="logo-text-group">
+            <div class="logo-title">
+              <span>VisionAttend</span>
+              <span class="badge-ai">AI</span>
+            </div>
+            <div class="logo-subtitle">Attendance Management Portal</div>
+          </div>
+        </a>
+        <button class="sidebar-toggle-btn" id="btn-sidebar-collapse" onclick="toggleSidebarCollapse()"
+          title="Collapse / Expand Sidebar">
+          <i data-lucide="chevron-left" id="sidebar-collapse-icon"></i>
+        </button>
+      </div>
+
+      <!-- Sidebar Body: Navigation & Quick Actions -->
+      <div class="sidebar-body">
+        <!-- Main Navigation Menu -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Main Menu</div>
+          <button class="nav-item active" id="nav-dashboard" onclick="navigateTo('dashboard')">
+            <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+            <span class="nav-label">Dashboard</span>
+          </button>
+          <button class="nav-item" id="nav-live" onclick="navigateTo('live')">
+            <span class="nav-icon"><i data-lucide="video"></i></span>
+            <span class="nav-label">Live Attendance</span>
+            <span class="nav-badge" id="side-stat-present">0</span>
+          </button>
+          <button class="nav-item" id="nav-my-classes" onclick="navigateTo('my-classes')"
+            title="Faculty assigned schedule and attendance sessions">
+            <span class="nav-icon"><i data-lucide="book-open"></i></span>
+            <span class="nav-label">My Classes</span>
+            <span class="nav-badge" id="side-stat-classes" style="background:#2563eb; color:#fff;">3</span>
+          </button>
+          <button class="nav-item" id="nav-timetable" onclick="navigateTo('timetable')">
+            <span class="nav-icon"><i data-lucide="calendar"></i></span>
+            <span class="nav-label">Timetable</span>
+          </button>
+          <button class="nav-item" id="nav-records" onclick="navigateTo('records')">
+            <span class="nav-icon"><i data-lucide="calendar-check"></i></span>
+            <span class="nav-label">Attendance Records</span>
+          </button>
+          <button class="nav-item" id="nav-students" onclick="navigateTo('students')">
+            <span class="nav-icon"><i data-lucide="users"></i></span>
+            <span class="nav-label">Students</span>
+            <span class="nav-badge" id="side-stat-enrolled">0</span>
+          </button>
+          <button class="nav-item" id="nav-analytics" onclick="navigateTo('analytics')">
+            <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+            <span class="nav-label">Analytics</span>
+          </button>
+          <button class="nav-item" id="nav-reports" onclick="navigateTo('reports')">
+            <span class="nav-icon"><i data-lucide="file-text"></i></span>
+            <span class="nav-label">Reports</span>
+          </button>
+          <button class="nav-item admin-only" id="nav-academic" onclick="navigateTo('academic')"
+            title="Configure University Academic Structure, Batches, Subjects & Timetable">
+            <span class="nav-icon"><i data-lucide="graduation-cap"></i></span>
+            <span class="nav-label">Academic Management</span>
+          </button>
+          <button class="nav-item" id="nav-settings" onclick="navigateTo('settings')">
+            <span class="nav-icon"><i data-lucide="settings"></i></span>
+            <span class="nav-label">Settings</span>
+          </button>
+        </div>
+
+        <!-- Quick AI Operations -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">AI Actions</div>
+          <button class="sidebar-action-pill" onclick="toggleImageRecognitionModal()"
+            title="Upload a photo to recognize students and record attendance">
+            <span class="action-icon"><i data-lucide="camera" style="width:16px;height:16px;color:#10b981"></i></span>
+            <span>Photo Recognition</span>
+          </button>
+          <button class="sidebar-action-pill" onclick="toggleVideoRecognitionModal()"
+            title="Upload classroom lecture video to compile full attendance roster">
+            <span class="action-icon"><i data-lucide="film" style="width:16px;height:16px;color:#0284c7"></i></span>
+            <span>Video Roster Scan</span>
+          </button>
+          <button class="sidebar-action-pill" onclick="setAppMode('enroll')"
+            title="Fast live zone enrollment for student face capture">
+            <span class="action-icon"><i data-lucide="user-plus"
+                style="width:16px;height:16px;color:#f59e0b"></i></span>
+            <span>Fast Live Enroll</span>
+          </button>
+          <button class="sidebar-action-pill" onclick="toggleRegisterModal()"
+            title="Register student profile with photo upload">
+            <span class="action-icon"><i data-lucide="upload-cloud"
+                style="width:16px;height:16px;color:#8b5cf6"></i></span>
+            <span>Register Profile</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer: System Status & Faculty Profile -->
+      <div class="sidebar-footer">
+        <!-- System Health Component -->
+        <div class="system-status-box">
+          <div class="status-indicator-row">
+            <span>Face AI Engine:</span>
+            <span class="status-pill-dot"><span class="status-dot green"></span>Online</span>
+          </div>
+          <div class="status-indicator-row">
+            <span>Camera Stream:</span>
+            <span class="status-pill-dot"><span class="status-dot green"></span>Active</span>
+          </div>
+          <div class="status-indicator-row">
+            <span>SQLite Database:</span>
+            <span class="status-pill-dot"><span class="status-dot blue"></span>Synced</span>
+          </div>
+          <div class="status-indicator-row">
+            <span>Attendance Svc:</span>
+            <span class="status-pill-dot"><span class="status-dot green"></span>Running</span>
+          </div>
+        </div>
+
+        <!-- Faculty Profile Card -->
+        <div class="faculty-user-card" title="Faculty Account">
+          <div class="faculty-avatar">AS</div>
+          <div class="faculty-info">
+            <div class="faculty-name">Dr. A. Sharma</div>
+            <div class="faculty-role">Prof & HOD · Dept of CSE</div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ======================================================================
+       2. TOP NAVBAR & MAIN STAGE CONTAINER
+       ====================================================================== -->
+    <div class="app-main">
+
+      <!-- Top Navbar -->
+      <header class="app-navbar">
+        <div class="navbar-left">
+          <button class="mobile-menu-btn" id="btn-mobile-sidebar" onclick="toggleMobileSidebar()">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="page-breadcrumb">
+            <div class="breadcrumb-title" id="breadcrumb-title">Dashboard Overview</div>
+            <div class="breadcrumb-path" id="breadcrumb-path">VisionAttend AI · Classroom 1 (Front)</div>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <!-- Active Period Pill -->
+          <div class="period-badge-chip" id="nav-period-badge" title="Active Timetable Slot">
+            <i data-lucide="clock" style="width:14px;height:14px;"></i>
+            <span id="side-stat-period">Period 1</span>
+          </div>
+
+          <!-- Camera Device Selector Dropdown -->
+          <div class="cam-select-group">
+            <label for="camera-select" class="cam-select-label">CAM:</label>
+            <select id="camera-select" class="cam-select-dropdown" onchange="onCameraSelectChange(this.value)">
+              <option value="">Scanning cameras...</option>
+            </select>
+            <button class="cam-mini-btn" id="btn-refresh-cam" onclick="refreshCameraDevices()"
+              title="Refresh Camera Devices">
+              <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+            </button>
+            <button class="cam-mini-btn" id="btn-add-cam" onclick="toggleAddCameraModal()"
+              title="Connect External USB or IP Camera">
+              <i data-lucide="plus" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
+
+          <!-- Camera Active Indicator -->
+          <span class="stream-status-pill online" id="rec-status-badge">
+            <span class="stream-pulse-dot"></span>
+            <span>CAMERA ACTIVE</span>
+          </span>
+
+          <!-- Live Clock & Date -->
+          <div class="live-clock-box">
+            <i data-lucide="calendar" style="width:13px;height:13px;color:var(--text-muted)"></i>
+            <span id="clock-date">--</span>
+            <span style="opacity:0.3">|</span>
+            <span id="clock">00:00:00</span>
+          </div>
+
+          <!-- University Role Switcher (Admin / HOD / Faculty / Student) -->
+          <div class="role-selector-wrap" title="Switch Portal Persona / Role Access">
+            <i data-lucide="shield-check" style="width:14px;height:14px;color:var(--primary);"></i>
+            <span class="role-select-label">ROLE:</span>
+            <select id="user-role-select" class="role-select-dropdown" onchange="onUserRoleChange(this.value)">
+              <option value="ADMIN">Administrator (Full Access)</option>
+              <option value="HOD">HOD CSE (Dr. A. Sharma)</option>
+              <option value="FACULTY_ARUN" selected>Faculty: Dr. Arun (CSE · DBMS)</option>
+              <option value="FACULTY_RAMAN">Faculty: Prof. K. Raman (CSE)</option>
+              <option value="FACULTY_PRIYA">Faculty: Dr. Priya (MBA · Marketing)</option>
+              <option value="STUDENT_RAHUL">Student: Rahul Kumar (CSE-3-A)</option>
+              <option value="STUDENT_RITHVIK">Student: Rithvik (CSE-3-B)</option>
+            </select>
+          </div>
+
+          <!-- Dark / Light Theme Toggle -->
+          <button class="nav-icon-action" id="btn-theme-toggle" onclick="toggleAppTheme()"
+            title="Toggle Dark/Light Mode">
+            <i data-lucide="moon" id="theme-toggle-icon"></i>
+          </button>
+
+          <!-- Notification Bell -->
+          <button class="nav-icon-action" id="btn-notifications" onclick="toggleNotificationDrawer()"
+            title="Recent Alerts & Notifications">
+            <i data-lucide="bell"></i>
+            <span class="notif-badge-bubble" id="notif-bubble" style="display:none;"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Global Academic Hierarchy Filter Bar (Section 3 of University Requirements) -->
+      <div class="academic-filter-bar" id="academic-filter-bar">
+        <div class="filter-bar-title">
+          <i data-lucide="filter" style="width:15px;height:15px;"></i>
+          <span>Hierarchy Filter:</span>
+        </div>
+        <div class="filter-controls-wrap">
+          <div class="filter-select-group">
+            <label for="filter-dept">Department:</label>
+            <select id="filter-dept" onchange="onAcademicFilterChange('dept')">
+              <option value="ALL">All Departments</option>
+            </select>
+          </div>
+          <div class="filter-select-group">
+            <label for="filter-prog">Program:</label>
+            <select id="filter-prog" onchange="onAcademicFilterChange('prog')">
+              <option value="ALL">All Programs</option>
+            </select>
+          </div>
+          <div class="filter-select-group">
+            <label for="filter-year">Year:</label>
+            <select id="filter-year" onchange="onAcademicFilterChange('year')">
+              <option value="ALL">All Years</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+            </select>
+          </div>
+          <div class="filter-select-group">
+            <label for="filter-sem">Semester:</label>
+            <select id="filter-sem" onchange="onAcademicFilterChange('sem')">
+              <option value="ALL">All Semesters</option>
+            </select>
+          </div>
+          <div class="filter-select-group">
+            <label for="filter-sec">Section:</label>
+            <select id="filter-sec" onchange="onAcademicFilterChange('sec')">
+              <option value="ALL">All Sections</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="resetAcademicFilters()"
+            style="padding:4px 9px; font-size:11.5px;" title="Reset Academic Hierarchy Filters">
+            <i data-lucide="rotate-ccw" style="width:12px;height:12px;"></i>
+            <span>Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hidden compatibility elements required by main.js -->
+      <div style="display:none;">
+        <button id="btn-mode-attendance" onclick="setAppMode('attendance')"></button>
+        <button id="btn-mode-enroll" onclick="setAppMode('enroll')"></button>
+        <button id="btn-toggle-record" onclick="toggleAttendanceRecording()"></button>
+        <span id="sidebar-rec-icon"></span>
+        <span id="sidebar-rec-label"></span>
+        <button id="btn-cam-src" onclick="toggleWebcamSource()"></button>
+        <span id="cam-src-label">AI CAMERA FEED</span>
+      </div>
+
+      <!-- ====================================================================
+         3. PAGE VIEWPORT (TAB CONTENT)
+         ==================================================================== -->
+      <main class="page-viewport" id="page-viewport">
+
+        <!-- ==================================================================
+           PAGE 1: DASHBOARD HOME
+           ================================================================== -->
+        <section class="dashboard-page active" id="page-dashboard">
+
+          <!-- Top KPI Cards Grid -->
+          <div class="kpi-grid">
+            <!-- Card 1: Today's Attendance -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Today's Attendance</span>
+                <div class="kpi-icon-wrap blue"><i data-lucide="percent"></i></div>
+              </div>
+              <div class="kpi-value-row">
+                <div class="kpi-value" id="kpi-today-pct">0%</div>
+              </div>
+              <div class="kpi-progress-bar">
+                <div class="kpi-progress-fill" id="kpi-today-progress" style="width: 0%;"></div>
+              </div>
+              <div class="kpi-footer">
+                <span id="kpi-present-ratio">0 / 0 present</span>
+                <span class="kpi-trend positive"><i data-lucide="trending-up" style="width:12px;height:12px;"></i>
+                  Active</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Total Registered Students -->
+            <div class="kpi-card" onclick="navigateTo('students')" style="cursor:pointer;"
+              title="View all enrolled student profiles">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Total Students</span>
+                <div class="kpi-icon-wrap purple"><i data-lucide="users"></i></div>
+              </div>
+              <div class="kpi-value-row">
+                <div class="kpi-value" id="stat-enrolled">—</div>
+              </div>
+              <div class="kpi-footer">
+                <span>Biometric directory</span>
+                <span style="font-weight:600; color:var(--primary)">View Directory →</span>
+              </div>
+            </div>
+
+            <!-- Card 3: Present Today -->
+            <div class="kpi-card" onclick="navigateTo('live')" style="cursor:pointer;"
+              title="Go to Live Attendance Monitor">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Present Today</span>
+                <div class="kpi-icon-wrap green"><i data-lucide="user-check"></i></div>
+              </div>
+              <div class="kpi-value-row">
+                <div class="kpi-value" id="stat-present" style="color:var(--success)">0</div>
+              </div>
+              <div class="kpi-footer">
+                <span>Verified in session</span>
+                <span id="stat-late-sub" style="color:var(--warning); font-weight:600;"><span id="stat-late">0</span>
+                  Late</span>
+              </div>
+            </div>
+
+            <!-- Card 4: Recognition Status -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Recognition Status</span>
+                <div class="kpi-icon-wrap amber"><i data-lucide="cpu"></i></div>
+              </div>
+              <div class="kpi-value-row">
+                <div class="kpi-value" style="font-size:20px; font-weight:700; color:var(--text-main);">ArcFace AI</div>
+              </div>
+              <div class="kpi-footer">
+                <span id="stat-anomalies-wrap"><span id="stat-anomalies">0</span> Exits Guarded</span>
+                <span class="status-pill-dot" style="font-size:11px;"><span
+                    class="status-dot green"></span>Online</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Dashboard Split: Today's Attendance Table (Left) + Recognition Spotlight & Activity (Right) -->
+          <div class="split-dashboard-grid">
+
+            <!-- LEFT: Today's Attendance Table -->
+            <div class="full-card">
+              <div class="card-header-bar">
+                <div class="card-title-group">
+                  <span class="card-title">Today's Attendance Roster</span>
+                  <span class="card-counter-badge" id="roster-count-badge">0 Students</span>
+                </div>
+                <div class="card-header-actions">
+                  <button class="btn btn-secondary" onclick="exportTodayCSV()"
+                    style="font-size:12px; padding:5px 10px;">
+                    <i data-lucide="download" style="width:13px;height:13px;"></i>
+                    <span>Export CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Table Filters & Search -->
+              <div class="table-toolbar">
+                <div class="search-input-wrap">
+                  <span class="search-icon-inside"><i data-lucide="search" style="width:14px;height:14px;"></i></span>
+                  <input type="text" id="dash-search-input" placeholder="Search student name or ID..."
+                    onkeyup="filterTodayRoster()">
+                </div>
+                <div class="filter-tab-pills">
+                  <button class="filter-pill active" onclick="setDashboardStatusFilter('ALL', this)">All</button>
+                  <button class="filter-pill" onclick="setDashboardStatusFilter('PRESENT', this)">Present</button>
+                  <button class="filter-pill" onclick="setDashboardStatusFilter('LATE', this)">Late</button>
+                  <button class="filter-pill" onclick="setDashboardStatusFilter('ABSENT', this)">Absent</button>
+                </div>
+              </div>
+
+              <!-- Table Responsive Container -->
+              <div class="table-responsive-container">
+                <table class="modern-data-table">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Student ID</th>
+                      <th>Class</th>
+                      <th>Time</th>
+                      <th>Status</th>
+                      <th>Confidence</th>
+                      <th>Method</th>
+                      <th style="text-align:right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-roster-tbody">
+                    <!-- Populated dynamically via JS -->
+                    <tr>
+                      <td colspan="8">
+                        <div class="empty-state-card">
+                          <i data-lucide="loader-2" class="empty-icon" style="animation:spin 1s linear infinite"></i>
+                          <div class="empty-heading">Loading attendance data...</div>
+                          <div class="empty-sub">Fetching active session roster from VisionAttend AI.</div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- RIGHT: Spotlight Recognition Card & Real-Time Stream -->
+            <div style="display:flex; flex-direction:column; gap:20px;">
+
+              <!-- Hero Spotlight: Last Recognized Student -->
+              <div class="spotlight-card">
+                <div class="spotlight-header">
+                  <span class="spotlight-tag">
+                    <i data-lucide="check-circle-2" style="width:14px;height:14px;"></i>
+                    <span>Recognized Student</span>
+                  </span>
+                  <span class="spotlight-time" id="spotlight-time">Just now</span>
+                </div>
+
+                <div class="spotlight-student-box">
+                  <div class="spotlight-avatar" id="spotlight-avatar">--</div>
+                  <div class="spotlight-info">
+                    <div class="spotlight-name" id="spotlight-name">Waiting for Detection...</div>
+                    <div class="spotlight-meta" id="spotlight-meta">Camera live stream scanning</div>
+                  </div>
+                </div>
+
+                <div class="spotlight-meter-wrap">
+                  <div class="meter-label-row">
+                    <span>Recognition Confidence:</span>
+                    <span id="spotlight-conf-val"
+                      style="font-family:var(--font-mono); font-weight:700; color:var(--text-main);">--%</span>
+                  </div>
+                  <div class="meter-bar-bg">
+                    <div class="meter-bar-fill" id="spotlight-conf-bar" style="width:0%;"></div>
+                  </div>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px;">
+                  <span style="color:var(--text-muted)">Attendance Status:</span>
+                  <span class="status-badge present" id="spotlight-status-badge">Attendance Marked</span>
+                </div>
+              </div>
+
+              <!-- Quick Action Shortcuts -->
+              <div class="full-card" style="padding:16px 20px;">
+                <div style="font-size:13px; font-weight:700; color:var(--text-main); margin-bottom:12px;">Quick
+                  Operations</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <button class="btn btn-primary" onclick="toggleAttendanceRecording()"
+                    style="width:100%; justify-content:flex-start;">
+                    <i data-lucide="play" style="width:15px;height:15px;"></i>
+                    <span id="dash-rec-btn-text">Pause Attendance Tracking</span>
+                  </button>
+                  <button class="btn btn-secondary" onclick="toggleImageRecognitionModal()"
+                    style="width:100%; justify-content:flex-start;">
+                    <i data-lucide="camera" style="width:15px;height:15px;color:var(--success)"></i>
+                    <span>Upload Classroom Photo</span>
+                  </button>
+                  <button class="btn btn-secondary" onclick="toggleVideoRecognitionModal()"
+                    style="width:100%; justify-content:flex-start;">
+                    <i data-lucide="film" style="width:15px;height:15px;color:var(--primary)"></i>
+                    <span>Scan Lecture Video Roster</span>
+                  </button>
+                  <a href="/report/hod_summary" target="_blank" class="btn btn-ghost"
+                    style="width:100%; justify-content:flex-start;">
+                    <i data-lucide="file-check" style="width:15px;height:15px;"></i>
+                    <span>Official HOD Summary ↗</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Real-Time Activity Feed -->
+              <div class="full-card" style="padding:16px 20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                  <span style="font-size:13px; font-weight:700; color:var(--text-main);">Recent Activity</span>
+                  <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">Live Bus</span>
+                </div>
+                <div class="activity-stream-wrap" id="dash-activity-stream">
+                  <div style="font-size:12px; color:var(--text-muted); text-align:center; padding:16px;">Monitoring
+                    camera feed...</div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================================================================
+           PAGE: MY CLASSES & FACULTY ATTENDANCE WORKFLOW (Sections 6, 7, 21, 22)
+           ================================================================== -->
+        <section class="dashboard-page" id="page-my-classes">
+          <!-- Faculty Greeting & Profile Banner -->
+          <div class="faculty-hero-banner">
+            <div class="faculty-hero-left">
+              <h2 id="faculty-greeting-text">Good Morning, Dr. Arun</h2>
+              <p id="faculty-role-text">Associate Professor · Department of Computer Science & Engineering</p>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                <span class="chip" style="background:rgba(255,255,255,0.2); color:#fff; border:none;"
+                  id="faculty-day-chip">Today: Saturday</span>
+                <span class="chip" style="background:rgba(255,255,255,0.2); color:#fff; border:none;"
+                  id="faculty-time-chip">Clock: 09:30 AM</span>
+              </div>
+            </div>
+            <div class="faculty-hero-right" style="display:flex; align-items:center; gap:10px;">
+              <div style="background:rgba(255,255,255,0.15); padding:8px 12px; border-radius:8px; text-align:right;">
+                <div style="font-size:11px; opacity:0.8;">Test Day Simulator:</div>
+                <select id="sim-day-select" onchange="onSimDayChange(this.value)"
+                  style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.3); color:#fff; padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;">
+                  <option value="Monday">Monday Schedule</option>
+                  <option value="Tuesday">Tuesday Schedule</option>
+                  <option value="Wednesday">Wednesday Schedule</option>
+                  <option value="Thursday">Thursday Schedule</option>
+                  <option value="Friday">Friday Schedule</option>
+                  <option value="Saturday" selected>Saturday Schedule</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- CURRENT CLASS HERO CARD (Section 6 & 22) -->
+          <div class="current-class-card" id="current-class-hero-card">
+            <span class="current-class-badge">CURRENT CLASS</span>
+            <div class="class-info-main">
+              <h3 id="hero-course-name">DBMS (CS501)</h3>
+              <div class="class-meta-tags">
+                <span class="class-meta-pill highlight" id="hero-section-tag">CSE • 3rd Year • Section A</span>
+                <span class="class-meta-pill" id="hero-time-tag">⏰ 09:00 – 10:00</span>
+                <span class="class-meta-pill" id="hero-room-tag">🏛 Room 302</span>
+                <span class="class-meta-pill" id="hero-students-tag">👥 10 Enrolled Students</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:8px;" id="hero-status-note">
+                Facial recognition camera will enforce enrollment: Only students mapped to this section are valid.
+              </div>
+            </div>
+            <div class="class-action-wrap" style="text-align:right;">
+              <button class="btn btn-primary" id="btn-hero-start-att" onclick="startCurrentClassAttendance()"
+                style="padding:12px 24px; font-size:14px; font-weight:700; box-shadow:var(--shadow-md);">
+                <i data-lucide="play" style="width:16px;height:16px;"></i>
+                <span>START ATTENDANCE</span>
+              </button>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:6px;" id="hero-session-status-text">Ready
+                for live recognition</div>
+            </div>
+          </div>
+
+          <!-- Today's Schedule Section Title -->
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <div>
+              <h3 style="font-size:16px; font-weight:700; color:var(--text-main);">Today's Classes</h3>
+              <p style="font-size:12px; color:var(--text-muted);">Scheduled lectures mapped to your faculty profile</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadFacultyClasses()">
+              <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Refresh Schedule
+            </button>
+          </div>
+
+          <!-- Today's Classes List Grid -->
+          <div class="schedule-cards-grid" id="faculty-schedule-grid">
+            <!-- Populated dynamically via JS -->
+            <div style="text-align:center; padding:30px; grid-column:1/-1; color:var(--text-muted);">Loading today's
+              assigned classes...</div>
+          </div>
+
+          <!-- Today's Attendance Overview Table -->
+          <div class="full-card" style="margin-top:24px; padding:18px 22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <h4 style="font-size:14px; font-weight:700; color:var(--text-main);">Today's Attendance Summary</h4>
+              <span class="chip chip-b" style="font-size:11px;">Verification Audit Trail</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table" id="faculty-attendance-summary-table">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Class / Section</th>
+                    <th>Time Slot</th>
+                    <th>Room</th>
+                    <th>Attendance Ratio</th>
+                    <th>Percentage</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="faculty-attendance-summary-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+           PAGE: MY CLASSES & FACULTY WORKFLOW (Sections 6, 7, 8, 21, 22)
+           ================================================================== -->
+        <section class="dashboard-page" id="page-my-classes">
+
+          <!-- Faculty Hero Banner -->
+          <div class="faculty-hero-banner">
+            <div class="faculty-hero-text">
+              <h2>Good Morning, <span class="faculty-name">Dr. Arun</span></h2>
+              <p>Today's Schedule & Assigned Lectures · Automatic Biometric Attendance Workflow</p>
+            </div>
+            <div class="day-filter-pills">
+              <button class="day-filter-btn active" onclick="loadFacultyClasses('Monday')">Monday</button>
+              <button class="day-filter-btn" onclick="loadFacultyClasses('Tuesday')">Tuesday</button>
+              <button class="day-filter-btn" onclick="loadFacultyClasses('Wednesday')">Wednesday</button>
+              <button class="day-filter-btn" onclick="loadFacultyClasses('Thursday')">Thursday</button>
+              <button class="day-filter-btn" onclick="loadFacultyClasses('Friday')">Friday</button>
+              <button class="day-filter-btn" onclick="loadFacultyClasses('Saturday')">Saturday</button>
+            </div>
+          </div>
+
+          <!-- Section 6: Current Class Hero Card -->
+          <div style="margin-bottom:24px;">
+            <h3
+              style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+              <i data-lucide="radio" style="color:var(--danger); width:16px; height:16px;"></i>
+              <span>CURRENT ACTIVE CLASS</span>
+            </h3>
+            <div id="current-class-card-container">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <!-- Section 7 & 22: Today's Assigned Schedule Grid -->
+          <div class="full-card" style="margin-bottom:24px;">
+            <div class="card-header-bar">
+              <div class="card-title-group">
+                <span class="card-title">Assigned Lecture Periods</span>
+                <span class="card-counter-badge" id="faculty-periods-count">Active Timetable</span>
+              </div>
+              <div class="card-header-actions">
+                <span style="font-size:12px; color:var(--text-muted)">Automatic cross-section validation enabled</span>
+              </div>
+            </div>
+            <div class="faculty-schedule-grid" id="faculty-schedule-grid"
+              style="padding:16px; display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:16px;">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================================================================
+           PAGE 2: LIVE ATTENDANCE MONITORING
+           ================================================================== -->
+        <section class="dashboard-page" id="page-live">
+          <!-- Active Session HUD Banner (Appears when attendance session is in progress) -->
+          <div class="session-hud-banner" id="live-session-banner" style="display:none;">
+            <div class="session-hud-title">
+              <span class="status-pill-dot"><span class="status-dot green"></span></span>
+              <div>
+                <h4 id="live-sess-title">CS501: Database Management Systems (DBMS)</h4>
+                <div style="font-size:12px; color:var(--text-muted);" id="live-sess-subtitle">CSE · 3rd Year · Section A
+                  · Room 302 · Faculty: Dr. Arun</div>
+              </div>
+            </div>
+            <div class="session-hud-stats">
+              <span class="chip"
+                style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#10b981; font-weight:700;"
+                id="live-sess-present-chip">
+                Present: 0 / 10
+              </span>
+              <span class="chip"
+                style="background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.3); color:#2563eb; font-weight:700;">
+                STRICT SECTION FILTER ON
+              </span>
+              <button class="btn btn-primary" onclick="openAttendanceReviewModal()"
+                style="font-size:12px; padding:6px 14px;">
+                <i data-lucide="check-square" style="width:14px;height:14px;"></i>
+                <span>Stop & Review Attendance</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section Mismatch Dynamic Alert Strip -->
+          <div class="mismatch-alert-banner" id="mismatch-alert-strip" style="display:none;">
+            <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
+            <span id="mismatch-alert-text">Student belongs to another section. Attendance NOT marked.</span>
+          </div>
+          <div class="live-camera-stage">
+
+            <!-- LEFT: Large Camera Feed Card -->
+            <div class="camera-feed-card">
+              <div class="video-frame-container" id="video-frame-container">
+                <!-- Live Video Feed Elements -->
+                <img id="video-feed" src="/video_feed" alt="Classroom Live Stream"
+                  style="width:100%; height:100%; object-fit:cover;">
+                <video id="client-webcam" autoplay playsinline muted
+                  style="display:none; width:100%; height:100%; object-fit:cover;"></video>
+                <canvas id="client-canvas"
+                  style="position:absolute; inset:0; pointer-events:none; width:100%; height:100%;"></canvas>
+
+                <!-- Video HUD Overlay -->
+                <div class="video-hud-overlay">
+                  <!-- Top HUD Row -->
+                  <div class="hud-top-row">
+                    <div class="hud-pill">
+                      <span class="stream-pulse-dot" style="background:#10b981;"></span>
+                      <span id="cam-status">ATTENDANCE TRACKING ACTIVE</span>
+                    </div>
+
+                    <div class="hud-telemetry-chips">
+                      <span class="telemetry-chip" id="telemetry-fps">⚡ 60 FPS</span>
+                      <span class="telemetry-chip" id="telemetry-vec">🎯 FAISS: 0.8ms</span>
+                    </div>
+                  </div>
+
+                  <!-- Center Banner Toast (Appears upon student recognition) -->
+                  <div class="hud-banner-toast" id="hud-banner" style="display:none;">
+                    <span id="hud-text">STUDENT IDENTIFIED</span>
+                  </div>
+
+                  <!-- Bottom HUD Row -->
+                  <div class="hud-bottom-row">
+                    <div class="hud-pill" id="mode-pill-txt">
+                      ● ATTENDANCE MODE
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                      <button class="hud-icon-btn" id="btn-theater" onclick="toggleTheaterMode()" title="Theater Mode">
+                        <span id="theater-icon">⛶</span> <span>THEATER</span>
+                      </button>
+                      <button class="hud-icon-btn" id="btn-fullscreen" onclick="toggleFullScreen()" title="Fullscreen">
+                        <span>⛶</span> <span>FULLSCREEN</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Camera Controls Bar -->
+              <div class="camera-toolbar-bar">
+                <div class="cam-btn-group">
+                  <button class="btn btn-primary" onclick="toggleAttendanceRecording()">
+                    <i data-lucide="pause" style="width:14px;height:14px;"></i>
+                    <span id="live-rec-btn-label">Pause Attendance Tracking</span>
+                  </button>
+                  <button class="btn btn-secondary" onclick="toggleWebcamSource()"
+                    title="Reconnect feed or switch to client webcam">
+                    <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+                    <span>Reconnect Feed</span>
+                  </button>
+                </div>
+
+                <div class="cam-btn-group">
+                  <button class="btn btn-secondary" onclick="toggleImageRecognitionModal()"
+                    title="Upload Classroom Photo">
+                    <i data-lucide="camera" style="width:14px;height:14px;color:var(--success)"></i>
+                    <span>Photo Scan</span>
+                  </button>
+                  <button class="btn btn-secondary" onclick="toggleVideoRecognitionModal()" title="Upload Video Roster">
+                    <i data-lucide="film" style="width:14px;height:14px;color:var(--primary)"></i>
+                    <span>Video Scan</span>
+                  </button>
+                  <button class="btn btn-secondary" onclick="setAppMode('enroll')"
+                    title="Start 120-frame live zone enrollment">
+                    <i data-lucide="user-plus" style="width:14px;height:14px;color:var(--warning)"></i>
+                    <span>Live Enroll</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Real-Time Recognition Stream -->
+            <div style="display:flex; flex-direction:column; gap:20px;">
+
+              <!-- Live Recognition Activity Spotlight -->
+              <div class="spotlight-card">
+                <div class="spotlight-header">
+                  <span class="spotlight-tag">
+                    <i data-lucide="check-circle-2" style="width:14px;height:14px;"></i>
+                    <span>Active Identification</span>
+                  </span>
+                  <span class="spotlight-time" id="live-spotlight-time">Live Feed</span>
+                </div>
+
+                <div class="spotlight-student-box">
+                  <div class="spotlight-avatar" id="live-spotlight-avatar">--</div>
+                  <div class="spotlight-info">
+                    <div class="spotlight-name" id="live-spotlight-name">Scanning Stream...</div>
+                    <div class="spotlight-meta" id="live-spotlight-meta">Face detection active</div>
+                  </div>
+                </div>
+
+                <div class="spotlight-meter-wrap">
+                  <div class="meter-label-row">
+                    <span>Match Confidence:</span>
+                    <span id="live-spotlight-conf" style="font-family:var(--font-mono); font-weight:700;">--%</span>
+                  </div>
+                  <div class="meter-bar-bg">
+                    <div class="meter-bar-fill" id="live-spotlight-bar" style="width:0%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Real-Time Activity Log / Event Bus -->
+              <div class="full-card" style="flex:1;">
+                <div class="card-header-bar">
+                  <span class="card-title">Real-Time Attendance Log</span>
+                  <span class="card-counter-badge">Live Stream</span>
+                </div>
+                <div class="page-viewport" style="padding:12px; max-height:420px; overflow-y:auto;" id="log-list">
+                  <div class="empty-state-card">
+                    <i data-lucide="video" class="empty-icon"></i>
+                    <div class="empty-heading">Monitoring Live Feed</div>
+                    <div class="empty-sub">Recognized student face events will appear here in real-time.</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================================================================
+           PAGE 3: ATTENDANCE RECORDS (HISTORY & LOGS)
+           ================================================================== -->
+        <section class="dashboard-page" id="page-records">
+          <div class="full-card">
+            <div class="card-header-bar">
+              <div class="card-title-group">
+                <span class="card-title">Historical Attendance Records</span>
+                <span class="card-counter-badge" id="records-count-badge">Database Log</span>
+              </div>
+              <div class="card-header-actions">
+                <button class="btn btn-secondary" onclick="exportRecordsCSV()">
+                  <i data-lucide="download" style="width:14px;height:14px;"></i>
+                  <span>Download CSV</span>
+                </button>
+                <a href="/report/hod_summary" target="_blank" class="btn btn-secondary">
+                  <i data-lucide="file-text" style="width:14px;height:14px;"></i>
+                  <span>Official HOD Summary ↗</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="table-toolbar">
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <div class="search-input-wrap">
+                  <span class="search-icon-inside"><i data-lucide="search" style="width:14px;height:14px;"></i></span>
+                  <input type="text" id="records-search-input" placeholder="Search student name or ID..."
+                    onkeyup="filterRecordsTable()">
+                </div>
+
+                <!-- Date Picker Input -->
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <label for="records-date-picker"
+                    style="font-size:12px; font-weight:600; color:var(--text-muted)">Date:</label>
+                  <input type="date" id="records-date-picker" class="form-input"
+                    style="padding:5px 10px; font-size:12.5px;" onchange="loadRecordsForDate(this.value)">
+                  <button class="btn btn-ghost" onclick="setRecordsDateToday()"
+                    style="font-size:11px; padding:5px 8px;">Today</button>
+                </div>
+
+                <!-- Status Filter -->
+                <select id="records-status-select" class="form-select" style="padding:5px 10px; font-size:12.5px;"
+                  onchange="filterRecordsTable()">
+                  <option value="ALL">All Statuses</option>
+                  <option value="PRESENT">Present</option>
+                  <option value="LATE">Late</option>
+                  <option value="ABSENT">Absent</option>
+                  <option value="DEFICIT">Deficit (&lt;75%)</option>
+                </select>
+
+                <!-- Class Filter -->
+                <select id="records-class-select" class="form-select" style="padding:5px 10px; font-size:12.5px;"
+                  onchange="filterRecordsTable()">
+                  <option value="ALL">All Classes</option>
+                  <option value="CSE-A">CSE-A</option>
+                  <option value="CSE B">CSE-B</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Records Table -->
+            <div class="table-responsive-container">
+              <table class="modern-data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Student</th>
+                    <th>Student ID</th>
+                    <th>Class</th>
+                    <th>Period</th>
+                    <th>First IN</th>
+                    <th>Last Seen</th>
+                    <th>Dwell</th>
+                    <th>Attendance %</th>
+                    <th>Status</th>
+                    <th>Confidence</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="records-table-tbody">
+                  <!-- Populated dynamically via JS -->
+                  <tr>
+                    <td colspan="12">
+                      <div class="empty-state-card">
+                        <i data-lucide="calendar" class="empty-icon"></i>
+                        <div class="empty-heading">No attendance records found</div>
+                        <div class="empty-sub">Select another date or adjust your filter query above.</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+           PAGE 4: STUDENTS MANAGEMENT
+           ================================================================== -->
+        <section class="dashboard-page" id="page-students">
+          <div class="full-card">
+            <div class="card-header-bar">
+              <div class="card-title-group">
+                <span class="card-title">Enrolled Students Biometric Directory</span>
+                <span class="card-counter-badge" id="students-count-badge">0 Registered</span>
+              </div>
+              <div class="card-header-actions">
+                <button class="btn btn-primary" onclick="toggleRegisterModal()">
+                  <i data-lucide="user-plus" style="width:14px;height:14px;"></i>
+                  <span>Add Student (Photo)</span>
+                </button>
+                <button class="btn btn-secondary" onclick="setAppMode('enroll')">
+                  <i data-lucide="camera" style="width:14px;height:14px;color:var(--warning)"></i>
+                  <span>Fast Live Enroll</span>
+                </button>
+                <button class="btn btn-secondary" onclick="openDeleteStudentModal()">
+                  <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                  <span>Delete Student</span>
+                </button>
+                <button class="btn btn-ghost" onclick="rebuildEmbeddings()"
+                  title="Rebuild ArcFace Biometric Embeddings Cache">
+                  <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+                  <span>Rebuild</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="table-toolbar">
+              <div class="search-input-wrap">
+                <span class="search-icon-inside"><i data-lucide="search" style="width:14px;height:14px;"></i></span>
+                <input type="text" id="students-search-input" placeholder="Search enrolled student..."
+                  onkeyup="filterStudentsGrid()">
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <select id="students-class-filter" class="form-select" style="padding:5px 10px; font-size:12px;"
+                  onchange="filterStudentsGrid()">
+                  <option value="ALL">All Sections</option>
+                  <option value="CSE-A">CSE-A</option>
+                  <option value="CSE B">CSE-B</option>
+                </select>
+                <div class="filter-tab-pills">
+                  <button class="filter-pill active" id="btn-view-cards" onclick="setStudentsViewMode('cards')"><i
+                      data-lucide="grid" style="width:13px;height:13px;"></i></button>
+                  <button class="filter-pill" id="btn-view-table" onclick="setStudentsViewMode('table')"><i
+                      data-lucide="list" style="width:13px;height:13px;"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cards View -->
+            <div class="student-directory-grid" id="students-cards-grid">
+              <!-- Populated via JS -->
+            </div>
+
+            <!-- Table View (Hidden by default) -->
+            <div class="table-responsive-container" id="students-table-wrap" style="display:none;">
+              <table class="modern-data-table">
+                <thead>
+                  <tr>
+                    <th>Student Profile</th>
+                    <th>Student ID</th>
+                    <th>Class / Section</th>
+                    <th>Biometric Samples</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="students-table-tbody">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+           PAGE 5: ATTENDANCE ANALYTICS
+           ================================================================== -->
+        <section class="dashboard-page" id="page-analytics">
+
+          <!-- Metrics Row -->
+          <div class="analytics-metrics-grid">
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Average Attendance</span>
+                <div class="kpi-icon-wrap blue"><i data-lucide="activity"></i></div>
+              </div>
+              <div class="kpi-value" id="analytics-avg-att">91.4%</div>
+              <div class="kpi-footer">Across all class periods</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Punctuality Score</span>
+                <div class="kpi-icon-wrap green"><i data-lucide="check-check"></i></div>
+              </div>
+              <div class="kpi-value" id="analytics-punctuality">94.8%</div>
+              <div class="kpi-footer">Students on-time (&lt;15m)</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Total Tracked Logs</span>
+                <div class="kpi-icon-wrap purple"><i data-lucide="database"></i></div>
+              </div>
+              <div class="kpi-value" id="analytics-total-logs">--</div>
+              <div class="kpi-footer">SQLite verified records</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Attendance Deficit Alert</span>
+                <div class="kpi-icon-wrap amber"><i data-lucide="alert-triangle"></i></div>
+              </div>
+              <div class="kpi-value" id="analytics-deficit-count" style="color:var(--warning)">--</div>
+              <div class="kpi-footer">&lt;75% institutional quota</div>
+            </div>
+          </div>
+
+          <!-- 2x2 Charts Grid -->
+          <div class="charts-double-grid">
+
+            <!-- Chart 1: Weekly Attendance -->
+            <div class="chart-card-box">
+              <div class="chart-card-header">
+                <div>
+                  <div class="chart-title">Weekly Attendance Rate</div>
+                  <div class="chart-subtitle">Attendance % across the last 7 recorded dates</div>
+                </div>
+                <span class="badge-ai" style="font-size:10px;">DAILY AGGREGATE</span>
+              </div>
+              <div class="chart-canvas-wrap">
+                <canvas id="chart-weekly-attendance"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: Present vs Absent vs Late (Donut) -->
+            <div class="chart-card-box">
+              <div class="chart-card-header">
+                <div>
+                  <div class="chart-title">Present vs Absent vs Late</div>
+                  <div class="chart-subtitle">Overall attendance distribution breakdown</div>
+                </div>
+                <span class="badge-ai" style="font-size:10px;">DISTRIBUTION</span>
+              </div>
+              <div class="chart-canvas-wrap">
+                <canvas id="chart-status-donut"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="charts-double-grid">
+
+            <!-- Chart 3: Attendance Rate Trend -->
+            <div class="chart-card-box">
+              <div class="chart-card-header">
+                <div>
+                  <div class="chart-title">Attendance Trend Over Time</div>
+                  <div class="chart-subtitle">Longitudinal consistency and compliance trendline</div>
+                </div>
+                <span class="badge-ai" style="font-size:10px;">TRENDLINE</span>
+              </div>
+              <div class="chart-canvas-wrap">
+                <canvas id="chart-trend-line"></canvas>
+              </div>
+            </div>
+
+            <!-- Top Attendance Students Leaderboard -->
+            <div class="chart-card-box">
+              <div class="chart-card-header">
+                <div>
+                  <div class="chart-title">Top Attendance Students</div>
+                  <div class="chart-subtitle">Students with highest verified lecture attendance</div>
+                </div>
+                <span class="badge-ai" style="font-size:10px;">LEADERBOARD</span>
+              </div>
+              <div class="table-responsive-container" style="max-height:270px;">
+                <table class="modern-data-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Student Name</th>
+                      <th>ID</th>
+                      <th>Classes</th>
+                      <th style="text-align:right;">Attendance Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody id="analytics-top-students-tbody">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ==================================================================
+           PAGE 6: ACADEMIC REPORTS
+           ================================================================== -->
+        <section class="dashboard-page" id="page-reports">
+          <div class="reports-layout-grid">
+
+            <!-- Report Builder Form -->
+            <div class="report-config-card">
+              <div style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:4px;">Academic Report
+                Generator</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Configure formal attendance
+                registers for department submission and records.</div>
+
+              <div class="form-field-group">
+                <label class="form-label" for="report-type-select">Report Type</label>
+                <select id="report-type-select" class="form-select" onchange="generateReportPreview()">
+                  <option value="daily">Daily Attendance Register</option>
+                  <option value="weekly">Weekly Department Summary</option>
+                  <option value="monthly">Monthly Compliance Audit</option>
+                  <option value="student">Student Biometric Roster</option>
+                </select>
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-label" for="report-date-picker">Target Date</label>
+                <input type="date" id="report-date-picker" class="form-input" onchange="generateReportPreview()">
+              </div>
+
+              <div class="form-field-group">
+                <label class="form-label" for="report-class-select">Class / Section</label>
+                <select id="report-class-select" class="form-select" onchange="generateReportPreview()">
+                  <option value="ALL">All Sections</option>
+                  <option value="CSE-A">CSE-A</option>
+                  <option value="CSE B">CSE-B</option>
+                </select>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+                <button class="btn btn-primary" onclick="generateReportPreview()">
+                  <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+                  <span>Generate Preview</span>
+                </button>
+                <button class="btn btn-secondary" onclick="exportRecordsCSV()">
+                  <i data-lucide="download" style="width:14px;height:14px;"></i>
+                  <span>Download CSV</span>
+                </button>
+                <button class="btn btn-secondary" onclick="printOfficialReport()">
+                  <i data-lucide="printer" style="width:14px;height:14px;"></i>
+                  <span>Print Official Report</span>
+                </button>
+                <a href="/report/hod_summary" target="_blank" class="btn btn-ghost" style="font-size:12px;">
+                  <i data-lucide="file-check" style="width:14px;height:14px;"></i>
+                  <span>Executive HOD Summary ↗</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Report Preview Sheet (Printable Document View) -->
+            <div class="report-preview-sheet" id="report-preview-sheet">
+              <div class="report-sheet-header">
+                <div>
+                  <div class="inst-title">SRM INSTITUTE OF SCIENCE AND TECHNOLOGY</div>
+                  <div class="inst-sub">Department of Computer Science and Engineering · VisionAttend AI System</div>
+                  <div style="font-size:14px; font-weight:700; color:var(--primary); margin-top:8px;"
+                    id="rep-sheet-title">DAILY ATTENDANCE REGISTER</div>
+                </div>
+                <div style="text-align:right; font-size:12px; color:var(--text-muted);">
+                  <div><strong>Date:</strong> <span id="rep-sheet-date">--</span></div>
+                  <div><strong>Faculty:</strong> Dr. A. Sharma</div>
+                  <div><strong>Room:</strong> Classroom 1 (Front)</div>
+                </div>
+              </div>
+
+              <!-- Report KPI Summary Bar -->
+              <div
+                style="display:flex; gap:20px; background:var(--bg-subtle); padding:12px 18px; border-radius:var(--radius-sm);">
+                <div style="flex:1;">
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Total Strength</div>
+                  <div style="font-size:18px; font-weight:700;" id="rep-sheet-total">0</div>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Present</div>
+                  <div style="font-size:18px; font-weight:700; color:var(--success);" id="rep-sheet-present">0</div>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Absent</div>
+                  <div style="font-size:18px; font-weight:700; color:var(--danger);" id="rep-sheet-absent">0</div>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Attendance Rate</div>
+                  <div style="font-size:18px; font-weight:700; color:var(--primary);" id="rep-sheet-pct">0%</div>
+                </div>
+              </div>
+
+              <!-- Report Table -->
+              <div class="table-responsive-container">
+                <table class="modern-data-table">
+                  <thead>
+                    <tr>
+                      <th>Student Name</th>
+                      <th>Register Number</th>
+                      <th>Class</th>
+                      <th>Period</th>
+                      <th>First In</th>
+                      <th>Last Seen</th>
+                      <th>Status</th>
+                      <th>Confidence</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rep-sheet-tbody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Faculty Signature Line for Print -->
+              <div style="margin-top:36px; display:flex; justify-content:space-between; align-items:flex-end;">
+                <div style="font-size:11px; color:var(--text-muted)">
+                  Generated automatically by VisionAttend AI Biometric Terminal.<br>
+                  Verification method: ArcFace buffalo_sc deep neural facial embedding.
+                </div>
+                <div style="text-align:center;">
+                  <div style="border-bottom:1px solid #000; width:180px; margin-bottom:4px;"></div>
+                  <div style="font-size:12px; font-weight:700;">Faculty Signature / HOD</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================================================================
+           PAGE 7: TIMETABLE & CLASS PERIODS
+           ================================================================== -->
+        <section class="dashboard-page" id="page-timetable">
+          <div class="full-card">
+            <!-- ==================================================================
+           PAGE 7: TIMETABLE & CLASS PERIODS (Sections 4, 5, 14, 15)
+           ================================================================== -->
+            <section class="dashboard-page" id="page-timetable">
+              <div class="full-card">
+                <div class="card-header-bar" style="flex-wrap:wrap; gap:12px;">
+                  <div class="card-title-group">
+                    <span class="card-title">University Timetable & Academic Schedule</span>
+                    <span class="card-counter-badge" id="tt-count-badge">Active Schedule</span>
+                  </div>
+                  <div class="card-header-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="downloadTimetableTemplate()"
+                      title="Download Excel/CSV sample timetable template">
+                      <i data-lucide="download" style="width:14px;height:14px;"></i>
+                      <span>Download Template</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="openTimetableUploadModal()"
+                      title="Upload Excel (.xlsx) or CSV timetable with 12-point validation pipeline">
+                      <i data-lucide="upload-cloud" style="width:14px;height:14px;color:var(--primary);"></i>
+                      <span>Upload Timetable (.xlsx / .csv)</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="toggleTimetableModal()">
+                      <i data-lucide="plus" style="width:14px;height:14px;"></i>
+                      <span>Add Class Slot</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Day of Week & Filter Bar -->
+                <div
+                  style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px; padding:10px 14px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border);">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span
+                      style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:4px;">DAY:</span>
+                    <button class="filter-pill active" id="tt-day-ALL" onclick="filterTimetableByDay('ALL')">All
+                      Days</button>
+                    <button class="filter-pill" id="tt-day-Monday"
+                      onclick="filterTimetableByDay('Monday')">Monday</button>
+                    <button class="filter-pill" id="tt-day-Tuesday"
+                      onclick="filterTimetableByDay('Tuesday')">Tuesday</button>
+                    <button class="filter-pill" id="tt-day-Wednesday"
+                      onclick="filterTimetableByDay('Wednesday')">Wednesday</button>
+                    <button class="filter-pill" id="tt-day-Thursday"
+                      onclick="filterTimetableByDay('Thursday')">Thursday</button>
+                    <button class="filter-pill" id="tt-day-Friday"
+                      onclick="filterTimetableByDay('Friday')">Friday</button>
+                    <button class="filter-pill" id="tt-day-Saturday"
+                      onclick="filterTimetableByDay('Saturday')">Saturday</button>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <label for="tt-view-section-filter"
+                      style="font-size:12px; font-weight:600; color:var(--text-muted);">Section:</label>
+                    <select id="tt-view-section-filter" onchange="filterTimetableBySection(this.value)"
+                      style="background:var(--bg-card); border:1px solid var(--border); padding:4px 8px; border-radius:4px; font-size:12px;">
+                      <option value="ALL">All Sections</option>
+                      <option value="CSE-3-A">CSE – 3rd Year – A</option>
+                      <option value="CSE-3-B">CSE – 3rd Year – B</option>
+                      <option value="CSE-2-A">CSE – 2nd Year – A</option>
+                      <option value="MBA-1-A">MBA – 1st Year – A</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="table-responsive-container">
+                  <table class="modern-data-table" id="main-timetable-table">
+                    <thead>
+                      <tr>
+                        <th>Day</th>
+                        <th>Time Slot</th>
+                        <th>Department & Program</th>
+                        <th>Class / Section</th>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Faculty</th>
+                        <th>Room</th>
+                        <th style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="timetable-table-tbody">
+                      <!-- Populated via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- ==================================================================
+           PAGE 9: ACADEMIC MANAGEMENT (ADMIN & HOD PORTAL) (Section 16 & 17)
+           ================================================================== -->
+            <section class="dashboard-page" id="page-academic">
+              <div class="full-card">
+                <div class="card-header-bar" style="flex-wrap:wrap; gap:12px;">
+                  <div class="card-title-group">
+                    <span class="card-title">Academic Hierarchy & Institutional Master</span>
+                    <span class="card-counter-badge" id="acad-subtab-badge">Master Directory</span>
+                  </div>
+                  <div class="card-header-actions" id="acad-header-actions">
+                    <button class="btn btn-primary" id="btn-acad-add-entity" onclick="openAcademicAddModal()">
+                      <i data-lucide="plus" style="width:14px;height:14px;"></i>
+                      <span id="btn-acad-add-label">Add Department</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Academic Entity Subnav Tabs -->
+                <div class="academic-subnav">
+                  <button class="academic-subtab active" onclick="switchAcademicTab('departments', this)">
+                    <i data-lucide="building"
+                      style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i> Departments
+                  </button>
+                  <button class="academic-subtab" onclick="switchAcademicTab('programs', this)">
+                    <i data-lucide="award" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i>
+                    Programs & Streams
+                  </button>
+                  <button class="academic-subtab" onclick="switchAcademicTab('sections', this)">
+                    <i data-lucide="grid" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i>
+                    Sections & Semesters
+                  </button>
+                  <button class="academic-subtab" onclick="switchAcademicTab('subjects', this)">
+                    <i data-lucide="book" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i>
+                    Subjects
+                  </button>
+                  <button class="academic-subtab" onclick="switchAcademicTab('faculty', this)">
+                    <i data-lucide="briefcase"
+                      style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i> Faculty Directory
+                  </button>
+                  <button class="academic-subtab" onclick="switchAcademicTab('students', this)">
+                    <i data-lucide="users" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i>
+                    Students Mapping
+                  </button>
+                  <button class="academic-subtab" onclick="switchAcademicTab('corrections', this)">
+                    <i data-lucide="clipboard-check"
+                      style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i> Pending Corrections
+                    <span class="chip" style="background:#fef2f2; color:#ef4444; font-size:10px; margin-left:4px;"
+                      id="acad-corrections-count">0</span>
+                  </button>
+                  <button class="academic-subtab" onclick="switchAcademicTab('audit', this)">
+                    <i data-lucide="shield"
+                      style="width:14px;height:14px;display:inline-block;vertical-align:-2px;"></i> Audit Trail
+                  </button>
+                </div>
+
+                <!-- Academic Search Bar -->
+                <div
+                  style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:12px; flex-wrap:wrap;">
+                  <div style="position:relative; flex:1; max-width:320px;">
+                    <input type="text" id="acad-search-input" class="search-input"
+                      placeholder="Search master records..." oninput="filterAcademicTable(this.value)">
+                    <i data-lucide="search"
+                      style="position:absolute; right:10px; top:10px; width:14px; height:14px; color:var(--text-muted);"></i>
+                  </div>
+                  <div style="display:flex; gap:8px;">
+                    <button class="btn btn-secondary btn-sm" onclick="exportAcademicTableCSV()">
+                      <i data-lucide="file-spreadsheet" style="width:13px;height:13px;"></i> Export CSV
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="refreshAcademicTab()">
+                      <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Refresh
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Academic Content Tables Container -->
+                <div class="table-responsive-container">
+                  <table class="modern-data-table" id="academic-master-table">
+                    <thead id="academic-table-thead">
+                      <!-- Dynamically generated headers -->
+                    </thead>
+                    <tbody id="academic-table-tbody">
+                      <!-- Dynamically generated rows -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- ==================================================================
+           PAGE 8: SYSTEM SETTINGS
+           ================================================================== -->
+            <section class="dashboard-page" id="page-settings">
+              <div class="settings-grid">
+
+                <!-- Navigation -->
+                <div class="settings-nav-card">
+                  <button class="settings-tab-btn active" onclick="switchSettingsTab('general', this)">
+                    <i data-lucide="user" style="width:16px;height:16px;"></i>
+                    <span>General Settings</span>
+                  </button>
+                  <button class="settings-tab-btn" onclick="switchSettingsTab('recognition', this)">
+                    <i data-lucide="scan" style="width:16px;height:16px;"></i>
+                    <span>Face Recognition</span>
+                  </button>
+                  <button class="settings-tab-btn" onclick="switchSettingsTab('attendance', this)">
+                    <i data-lucide="clock" style="width:16px;height:16px;"></i>
+                    <span>Attendance Policy</span>
+                  </button>
+                  <button class="settings-tab-btn" onclick="switchSettingsTab('appearance', this)">
+                    <i data-lucide="palette" style="width:16px;height:16px;"></i>
+                    <span>Appearance & System</span>
+                  </button>
+                </div>
+
+                <!-- Content Card -->
+                <div class="settings-content-card">
+
+                  <!-- Tab 1: General -->
+                  <div class="settings-tab-panel" id="set-panel-general">
+                    <div class="settings-section-block">
+                      <div>
+                        <div class="settings-block-title">Faculty Profile Details</div>
+                        <div class="settings-block-desc">Configure your instructor name, academic department, and
+                          terminal location.</div>
+                      </div>
+
+                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        <div class="form-field-group">
+                          <label class="form-label">Faculty Name</label>
+                          <input type="text" id="set-faculty-name" class="form-input" value="Dr. A. Sharma">
+                        </div>
+                        <div class="form-field-group">
+                          <label class="form-label">Designation</label>
+                          <input type="text" id="set-faculty-desig" class="form-input" value="Professor & Head">
+                        </div>
+                        <div class="form-field-group">
+                          <label class="form-label">Department</label>
+                          <input type="text" id="set-faculty-dept" class="form-input"
+                            value="Computer Science & Engineering">
+                        </div>
+                        <div class="form-field-group">
+                          <label class="form-label">Institution</label>
+                          <input type="text" id="set-faculty-inst" class="form-input"
+                            value="SRM Institute of Science and Technology">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tab 2: Recognition Settings -->
+                  <div class="settings-tab-panel" id="set-panel-recognition" style="display:none;">
+                    <div class="settings-section-block">
+                      <div>
+                        <div class="settings-block-title">ArcFace Deep Learning Parameters</div>
+                        <div class="settings-block-desc">Calibrate cosine similarity threshold and temporal stability
+                          filters.</div>
+                      </div>
+
+                      <div class="form-field-group">
+                        <div style="display:flex; justify-content:space-between;">
+                          <label class="form-label">Cosine Similarity Threshold</label>
+                          <span id="set-threshold-val"
+                            style="font-family:var(--font-mono); font-weight:700;">0.42</span>
+                        </div>
+                        <div class="range-slider-group">
+                          <input type="range" id="set-threshold-slider" min="0.30" max="0.70" step="0.01" value="0.42"
+                            oninput="document.getElementById('set-threshold-val').textContent = this.value">
+                        </div>
+                        <span style="font-size:11px; color:var(--text-muted)">Default calibrated 0.42 provides optimal
+                          accuracy across variable classroom lighting.</span>
+                      </div>
+
+                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        <div class="form-field-group">
+                          <label class="form-label">Minimum Sharpness (Laplacian)</label>
+                          <input type="number" id="set-sharpness" class="form-input" value="35">
+                        </div>
+                        <div class="form-field-group">
+                          <label class="form-label">Consecutive Frames Required</label>
+                          <input type="number" id="set-consecutive" class="form-input" value="3">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tab 3: Attendance Policy -->
+                  <div class="settings-tab-panel" id="set-panel-attendance" style="display:none;">
+                    <div class="settings-section-block">
+                      <div>
+                        <div class="settings-block-title">Institutional Attendance Regulations</div>
+                        <div class="settings-block-desc">Thresholds for marking Present, Late, and Deficit.</div>
+                      </div>
+
+                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        <div class="form-field-group">
+                          <label class="form-label">Minimum Attendance Quota (%)</label>
+                          <input type="number" id="set-min-pct" class="form-input" value="75">
+                        </div>
+                        <div class="form-field-group">
+                          <label class="form-label">Late Arrival Cutoff (Minutes)</label>
+                          <input type="number" id="set-late-cutoff" class="form-input" value="15">
+                        </div>
+                        <div class="form-field-group">
+                          <label class="form-label">Maximum Out-of-Frame Absence (Minutes)</label>
+                          <input type="number" id="set-max-absence" class="form-input" value="15">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tab 4: Appearance -->
+                  <div class="settings-tab-panel" id="set-panel-appearance" style="display:none;">
+                    <div class="settings-section-block">
+                      <div>
+                        <div class="settings-block-title">Interface & Notifications</div>
+                        <div class="settings-block-desc">Personalize dashboard appearance and real-time audio/visual
+                          alerts.</div>
+                      </div>
+
+                      <div style="display:flex; flex-direction:column; gap:12px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                          <input type="checkbox" id="set-dark-mode"
+                            style="width:16px;height:16px; accent-color:var(--primary)"
+                            onchange="toggleAppTheme(this.checked)">
+                          <span style="font-size:13px; font-weight:600;">Enable Dark Theme</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                          <input type="checkbox" id="set-audio-chime" checked
+                            style="width:16px;height:16px; accent-color:var(--primary)">
+                          <span style="font-size:13px; font-weight:600;">Audio Chime on Successful Student
+                            Verification</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                          <input type="checkbox" id="set-telemetry-hud" checked
+                            style="width:16px;height:16px; accent-color:var(--primary)">
+                          <span style="font-size:13px; font-weight:600;">Display Telemetry HUD Chips on Video
+                            Stream</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                    <button class="btn btn-primary" onclick="saveDashboardSettings()">
+                      <i data-lucide="save" style="width:14px;height:14px;"></i>
+                      <span>Save Preferences</span>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================================
+     MODALS & DIALOGS (Clean SaaS Modals with exact preservation of IDs)
+     ======================================================================== -->
+
+  <!-- 1. LIVE BIOMETRIC ENROLLMENT MODAL (Fast Biometric Range Zone) -->
+  <div class="modal-backdrop-wrap" id="live-enroll-panel">
+    <div class="modal-dialog-box">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="zap" style="color:var(--warning)"></i>
+          <span>Fast Live Biometric Enrollment</span>
+        </div>
+        <button class="modal-close-btn" onclick="setAppMode('attendance')">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <p style="font-size:12.5px; color:var(--text-muted)">
+          Align student face inside camera zone. Captures biometric facial angles in seconds for high-speed enrollment.
+        </p>
+        <div class="form-field-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="enroll-name" placeholder="e.g. Arjun Mehta" class="form-input">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-field-group">
+            <label class="form-label">Class / Section</label>
+            <input type="text" id="enroll-class" class="form-input" value="CSE-A">
+          </div>
+          <div class="form-field-group">
+            <label class="form-label">Register Number</label>
+            <input type="text" id="enroll-reg" placeholder="e.g. RA2411003040001" class="form-input">
+          </div>
+        </div>
+
+        <!-- Enrollment Progress -->
+        <div id="enroll-progress-wrap" style="display:none; margin-top:8px;">
+          <div class="meter-bar-bg" style="height:8px;">
+            <div class="meter-bar-fill" id="enroll-bar" style="width:0%;"></div>
+          </div>
+          <div
+            style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:6px;">
+            <span id="enroll-step-text">Aligning face...</span>
+            <span id="enroll-pct-text">0/30</span>
+          </div>
+        </div>
+        <div id="enroll-msg" style="font-size:12px; margin-top:4px;"></div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" id="btn-cancel-enroll" style="display:none;"
+          onclick="cancelLiveEnroll()">Cancel</button>
+        <button class="btn btn-primary" id="btn-start-enroll" onclick="startLiveEnroll()">Start Fast Enrollment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. PHOTO REGISTRATION MODAL -->
+  <div class="modal-backdrop-wrap" id="register-panel">
+    <div class="modal-dialog-box">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="user-plus" style="color:var(--primary)"></i>
+          <span>Register Student Profile (Photo Upload)</span>
+        </div>
+        <button class="modal-close-btn" onclick="toggleRegisterModal()">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <p style="font-size:12.5px; color:var(--text-muted)">
+          Upload a clear passport-style or well-lit student photo to generate facial embedding vectors.
+        </p>
+        <div class="form-field-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="reg-name" placeholder="Student Full Name" class="form-input">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-field-group">
+            <label class="form-label">Class / Section</label>
+            <input type="text" id="reg-class" class="form-input" value="CSE-A">
+          </div>
+          <div class="form-field-group">
+            <label class="form-label">Register Number</label>
+            <input type="text" id="reg-no" placeholder="Registration No" class="form-input">
+          </div>
+        </div>
+        <div class="form-field-group">
+          <label class="form-label">Upload Profile Photo</label>
+          <input type="file" id="reg-image" accept="image/*" class="form-input" onchange="previewRegisterPhoto(event)">
+        </div>
+        <div id="reg-img-preview-box" style="display:none; text-align:center;">
+          <img id="reg-img-preview"
+            style="max-height:120px; border-radius:var(--radius-sm); border:1px solid var(--border);" />
+        </div>
+        <div id="reg-msg" style="font-size:12px; margin-top:4px;"></div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="toggleRegisterModal()">Cancel</button>
+        <button class="btn btn-primary" id="btn-upload-reg" onclick="registerFace()">Save Student Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. IMAGE UPLOAD RECOGNITION MODAL -->
+  <div class="modal-backdrop-wrap" id="image-recognition-modal">
+    <div class="modal-dialog-box modal-lg">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="camera" style="color:var(--success)"></i>
+          <span>Image Upload Face Recognition & Attendance</span>
+        </div>
+        <button class="modal-close-btn" onclick="toggleImageRecognitionModal()">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <p style="font-size:12.5px; color:var(--text-muted)">
+          Upload any classroom photo, student selfie, or group picture to automatically recognize enrolled faces:
+        </p>
+
+        <div class="upload-dropzone-box" id="img-rec-dropzone"
+          onclick="document.getElementById('img-rec-input').click()">
+          <input type="file" id="img-rec-input" accept="image/*" style="display:none"
+            onchange="handleImageRecSelected(event)">
+          <div id="img-rec-drop-prompt">
+            <i data-lucide="upload-cloud" style="width:36px;height:36px;color:var(--primary);margin-bottom:6px;"></i>
+            <div style="font-weight:600; color:var(--text-main);">Click or drag & drop photo here</div>
+            <div style="font-size:11px; color:var(--text-muted);">Supports JPG, PNG, WEBP & high-res phone captures
+            </div>
+          </div>
+          <div id="img-rec-preview-wrap" style="display:none; text-align:center;">
+            <img id="img-rec-preview"
+              style="max-height:160px; max-width:100%; border-radius:var(--radius-sm); border:1px solid var(--border);" />
+            <div style="font-size:11.5px; color:var(--success); margin-top:4px;" id="img-rec-filename"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer;">
+            <input type="checkbox" id="img-rec-mark-att" checked
+              style="accent-color:var(--primary); width:16px; height:16px;">
+            <span>Automatically record attendance in daily register</span>
+          </label>
+          <button class="btn btn-ghost" onclick="resetImageRecognition()">Reset</button>
+        </div>
+
+        <div id="img-rec-msg" style="font-size:12px; margin-top:6px;"></div>
+
+        <!-- Results Container -->
+        <div id="img-rec-results"
+          style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
+          <div style="display:flex; gap:10px; margin-bottom:12px;">
+            <span class="status-badge" id="res-badge-total" style="background:var(--bg-subtle)">0 Faces Found</span>
+            <span class="status-badge present" id="res-badge-known">0 Enrolled</span>
+            <span class="status-badge absent" id="res-badge-unknown">0 Unregistered</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div>
+              <img id="img-rec-annotated"
+                style="width:100%; border-radius:var(--radius-md); border:1px solid var(--border);" />
+            </div>
+            <div id="img-rec-student-cards"
+              style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="toggleImageRecognitionModal()">Close</button>
+        <button class="btn btn-primary" id="btn-run-img-rec" onclick="submitImageRecognition()">Scan & Recognize
+          Faces</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. VIDEO UPLOAD ATTENDANCE ROSTER MODAL -->
+  <div class="modal-backdrop-wrap" id="video-recognition-modal">
+    <div class="modal-dialog-box modal-lg">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="film" style="color:var(--primary)"></i>
+          <span>Video Upload Attendance Recognition Roster</span>
+        </div>
+        <button class="modal-close-btn" onclick="toggleVideoRecognitionModal()">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <p style="font-size:12.5px; color:var(--text-muted)">
+          Upload any lecture video to scan all enrolled faces and compile an official database roster:
+        </p>
+
+        <div class="upload-dropzone-box" id="vid-rec-dropzone"
+          onclick="document.getElementById('vid-rec-input').click()">
+          <input type="file" id="vid-rec-input" accept="video/*,.mp4,.avi,.mov,.mkv,.webm" style="display:none"
+            onchange="handleVideoRecSelected(event)">
+          <div id="vid-rec-drop-prompt">
+            <i data-lucide="video" style="width:36px;height:36px;color:var(--primary);margin-bottom:6px;"></i>
+            <div style="font-weight:600; color:var(--text-main);">Click or drag & drop video file here</div>
+            <div style="font-size:11px; color:var(--text-muted);">Supports MP4, AVI, MOV, WEBM (up to 4K resolution)
+            </div>
+          </div>
+          <div id="vid-rec-preview-wrap" style="display:none; text-align:center;">
+            <video id="vid-rec-preview" controls
+              style="max-height:180px; max-width:100%; border-radius:var(--radius-sm); border:1px solid var(--border);"></video>
+            <div style="font-size:11.5px; color:var(--primary); margin-top:4px;" id="vid-rec-filename"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer;">
+            <input type="checkbox" id="vid-rec-mark-att" checked
+              style="accent-color:var(--primary); width:16px; height:16px;">
+            <span>Record verified attendance in SQLite database</span>
+          </label>
+          <button class="btn btn-ghost" onclick="resetVideoRecognition()">Reset</button>
+        </div>
+
+        <!-- Processing Progress Bar -->
+        <div id="vid-rec-progress-wrap" style="display:none; margin-top:8px;">
+          <div class="meter-bar-bg" style="height:6px;">
+            <div class="meter-bar-fill" id="vid-rec-bar" style="width:0%;"></div>
+          </div>
+          <div
+            style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+            <span id="vid-rec-step-text">Processing frames...</span>
+            <span id="vid-rec-pct-text">0%</span>
+          </div>
+        </div>
+
+        <div id="vid-rec-msg" style="font-size:12px; margin-top:6px;"></div>
+
+        <!-- Video Results Roster View -->
+        <div id="vid-rec-results"
+          style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <span class="status-badge" id="vid-res-total">0 Enrolled</span>
+              <span class="status-badge present" id="vid-res-present">0 Present</span>
+              <span class="status-badge absent" id="vid-res-absent">0 Absent</span>
+              <span class="telemetry-chip" id="vid-res-duration">0:00 Duration</span>
+              <span class="telemetry-chip" id="vid-res-frames">0 Frames</span>
+            </div>
+            <div class="filter-tab-pills">
+              <button class="filter-pill active" id="filter-btn-all" onclick="filterVideoRoster('all')">All</button>
+              <button class="filter-pill" id="filter-btn-present"
+                onclick="filterVideoRoster('PRESENT')">Present</button>
+              <button class="filter-pill" id="filter-btn-absent" onclick="filterVideoRoster('ABSENT')">Absent</button>
+            </div>
+          </div>
+
+          <!-- Keyframe snapshot -->
+          <div id="vid-rec-keyframe-wrap" style="display:none; margin-bottom:12px;">
+            <img id="vid-rec-keyframe"
+              style="width:100%; max-height:220px; object-fit:contain; border-radius:var(--radius-sm); border:1px solid var(--border);" />
+          </div>
+
+          <div class="table-responsive-container" style="max-height:240px;">
+            <table class="modern-data-table">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Reg No</th>
+                  <th>Class</th>
+                  <th>Status</th>
+                  <th>Confidence</th>
+                  <th>Time Range</th>
+                  <th>Detected Frames</th>
+                </tr>
+              </thead>
+              <tbody id="vid-roster-tbody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="toggleVideoRecognitionModal()">Close</button>
+        <button class="btn btn-primary" id="btn-run-vid-rec" onclick="submitVideoRecognition()">Scan Video & Compile
+          Roster</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. DELETE STUDENT CONFIRMATION MODAL -->
+  <div class="modal-backdrop-wrap" id="delete-modal">
+    <div class="modal-dialog-box">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="alert-triangle" style="color:var(--danger)"></i>
+          <span>Delete Student Profile</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeDeleteStudentModal()">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <p style="font-size:12.5px; color:var(--text-muted)">
+          Select an enrolled student to completely remove their biometric vectors, facial photos, and database
+          attendance records:
+        </p>
+        <div class="form-field-group">
+          <label class="form-label">Select Enrolled Student</label>
+          <select id="delete-student-select" class="form-select">
+            <option value="" disabled selected>Loading enrolled students...</option>
+          </select>
+        </div>
+        <div id="delete-modal-msg" style="font-size:12px; margin-top:4px;"></div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="closeDeleteStudentModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDeleteFromModal()">Permanently Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. TIMETABLE MANAGER MODAL -->
+  <div class="modal-backdrop-wrap" id="timetable-modal">
+    <div class="modal-dialog-box">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="calendar" style="color:var(--primary)"></i>
+          <span>Add Timetable Class Slot</span>
+        </div>
+        <button class="modal-close-btn" onclick="toggleTimetableModal()">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-field-group">
+            <label class="form-label">Class / Section</label>
+            <input type="text" id="tt-class" class="form-input" value="CSE-A">
+          </div>
+          <div class="form-field-group">
+            <label class="form-label">Course Code</label>
+            <input type="text" id="tt-course-code" placeholder="e.g. CSE301" class="form-input">
+          </div>
+        </div>
+        <div class="form-field-group">
+          <label class="form-label">Course Title</label>
+          <input type="text" id="tt-course-name" placeholder="e.g. Computer Vision" class="form-input">
+        </div>
+        <div class="form-field-group">
+          <label class="form-label">Faculty Name</label>
+          <input type="text" id="tt-faculty" placeholder="e.g. Dr. A. Sharma" class="form-input">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-field-group">
+            <label class="form-label">Start Time</label>
+            <input type="time" id="tt-start" class="form-input" value="09:00">
+          </div>
+          <div class="form-field-group">
+            <label class="form-label">End Time</label>
+            <input type="time" id="tt-end" class="form-input" value="09:50">
+          </div>
+        </div>
+
+        <div style="border-top:1px dashed var(--border); padding-top:12px; margin-top:6px;">
+          <label class="form-label">Or Batch Import Schedule (CSV)</label>
+          <div style="display:flex; gap:8px; margin-top:4px;">
+            <input type="file" id="tt-csv-file" accept=".csv" class="form-input">
+            <button class="btn btn-secondary" onclick="uploadTimetableCSV()">Upload</button>
+          </div>
+        </div>
+
+        <div id="tt-modal-msg" style="font-size:12px; margin-top:4px;"></div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="toggleTimetableModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitTimetableSlot()">Add Period</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. CONNECT EXTERNAL CAMERA MODAL -->
+  <div class="modal-backdrop-wrap" id="camera-modal">
+    <div class="modal-dialog-box">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="video" style="color:var(--primary)"></i>
+          <span>Connect External Camera or Phone Stream</span>
+        </div>
+        <button class="modal-close-btn" onclick="toggleAddCameraModal()">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <div class="form-field-group">
+          <label class="form-label">Source Type</label>
+          <select id="new-cam-type" class="form-select" onchange="onNewCamTypeChange(this.value)">
+            <option value="usb">External USB Webcam (Hardware Index)</option>
+            <option value="url">Network / IP / Phone Camera (RTSP / HTTP URL)</option>
+            <option value="hikvision">Hikvision CCTV Camera / NVR (as in iVMS-4200)</option>
+          </select>
+        </div>
+        <div class="form-field-group">
+          <label class="form-label">Camera Label</label>
+          <input type="text" id="new-cam-name" class="form-input" value="External Classroom Cam">
+        </div>
+        <div class="form-field-group" id="new-cam-src-group">
+          <label class="form-label" id="new-cam-src-label">Device Index</label>
+          <input type="text" id="new-cam-src" class="form-input" value="1">
+        </div>
+        <div id="hik-fields" style="display:none;">
+          <div class="form-field-group">
+            <label class="form-label">Camera / NVR IP Address</label>
+            <input type="text" id="hik-ip" class="form-input" placeholder="e.g. 192.168.1.64">
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div class="form-field-group" style="flex:1;">
+              <label class="form-label">Username</label>
+              <input type="text" id="hik-user" class="form-input" value="admin" autocomplete="off">
+            </div>
+            <div class="form-field-group" style="flex:1;">
+              <label class="form-label">Password</label>
+              <input type="password" id="hik-pass" class="form-input" autocomplete="new-password">
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div class="form-field-group" style="flex:1;">
+              <label class="form-label">Channel</label>
+              <input type="number" id="hik-channel" class="form-input" value="1" min="1">
+            </div>
+            <div class="form-field-group" style="flex:1;">
+              <label class="form-label">RTSP Port</label>
+              <input type="number" id="hik-port" class="form-input" value="554" min="1">
+            </div>
+            <div class="form-field-group" style="flex:1;">
+              <label class="form-label">Stream</label>
+              <select id="hik-stream" class="form-select">
+                <option value="sub">Sub (faster)</option>
+                <option value="main">Main (full quality)</option>
+              </select>
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted);">
+            Single camera: channel 1. Through an NVR: use the NVR's IP and the camera's channel number.
+            Find IP/port in iVMS-4200 → Device Management.
+          </div>
+        </div>
+        <div id="cam-modal-status" style="font-size:12px; margin-top:4px;"></div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="toggleAddCameraModal()">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-cam" onclick="saveAndConnectCustomCamera()">Connect &
+          Activate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+     MODAL: ATTENDANCE REVIEW & VERIFICATION BEFORE SUBMISSION (Sections 10 & 11)
+     ====================================================================== -->
+  <div class="modal-backdrop-wrap" id="attendance-review-modal" style="display:none;">
+    <div class="modal-dialog-box review-modal-card">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="check-circle" style="color:var(--success)"></i>
+          <span>ATTENDANCE REVIEW & FACULTY VERIFICATION</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeAttendanceReviewModal()">✕</button>
+      </div>
+
+      <!-- Review Meta Information Bar -->
+      <div style="padding:14px 20px; background:var(--bg-card); border-bottom:1px solid var(--border);">
+        <div
+          style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:13px;">
+          <div><span
+              style="color:var(--text-muted); font-size:11px; text-transform:uppercase; font-weight:700;">Subject:</span>
+            <strong id="rev-subject-name">DBMS (CS501)</strong></div>
+          <div><span
+              style="color:var(--text-muted); font-size:11px; text-transform:uppercase; font-weight:700;">Class:</span>
+            <strong id="rev-class-name">CSE – 3rd Year – A</strong></div>
+          <div><span
+              style="color:var(--text-muted); font-size:11px; text-transform:uppercase; font-weight:700;">Faculty:</span>
+            <strong id="rev-faculty-name">Dr. Arun</strong></div>
+          <div><span
+              style="color:var(--text-muted); font-size:11px; text-transform:uppercase; font-weight:700;">Date:</span>
+            <strong id="rev-session-date">03 October 2026</strong></div>
+        </div>
+      </div>
+
+      <!-- KPI Metric Summary Bar -->
+      <div class="review-summary-bar">
+        <div class="review-metric-box">
+          <div class="review-metric-val" id="rev-present-count" style="color:var(--success)">0 / 0</div>
+          <div class="review-metric-label">Present Count</div>
+        </div>
+        <div class="review-metric-box">
+          <div class="review-metric-val" id="rev-absent-count" style="color:var(--danger)">0 / 0</div>
+          <div class="review-metric-label">Absent Count</div>
+        </div>
+        <div class="review-metric-box">
+          <div class="review-metric-val" id="rev-confidence-avg" style="color:var(--primary)">0.0%</div>
+          <div class="review-metric-label">Avg AI Confidence</div>
+        </div>
+        <div class="review-metric-box">
+          <div class="review-metric-val" id="rev-status-badge">
+            <span class="chip"
+              style="background:var(--primary-light); color:var(--primary); font-weight:800;">IN_PROGRESS</span>
+          </div>
+          <div class="review-metric-label">Session Status</div>
+        </div>
+      </div>
+
+      <div class="modal-body-content" style="max-height:420px; overflow-y:auto; padding:0;">
+        <table class="modern-data-table" style="margin:0;">
+          <thead style="position:sticky; top:0; background:var(--bg-subtle); z-index:2;">
+            <tr>
+              <th>Student Name</th>
+              <th>Student ID / Reg</th>
+              <th>Face Status</th>
+              <th>Confidence</th>
+              <th>Verification</th>
+              <th style="text-align:right;">Attendance Action</th>
+            </tr>
+          </thead>
+          <tbody id="review-roster-tbody">
+            <!-- Populated dynamically with student roster -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer-bar" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:12px; color:var(--text-muted);" id="review-footer-status">
+          Faculty can manually adjust Present / Absent before locking submission.
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-secondary" onclick="closeAttendanceReviewModal()">Cancel</button>
+          <button class="btn btn-secondary" id="btn-rev-save-draft" onclick="saveAttendanceDraft()">
+            <i data-lucide="save" style="width:14px;height:14px;"></i>
+            <span>Save Draft</span>
+          </button>
+          <button class="btn btn-primary" id="btn-rev-submit-lock" onclick="submitAttendanceFinal()">
+            <i data-lucide="lock" style="width:14px;height:14px;"></i>
+            <span>Submit Attendance & Lock</span>
+          </button>
+          <button class="btn btn-warning" id="btn-rev-request-corr" onclick="openCorrectionRequestModal()"
+            style="display:none;">
+            <i data-lucide="edit-3" style="width:14px;height:14px;"></i>
+            <span>Request Correction</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+     MODAL: TIMETABLE UPLOAD & 12-POINT VALIDATION PREVIEW (Sections 4 & 5)
+     ====================================================================== -->
+  <div class="modal-backdrop-wrap" id="timetable-upload-modal" style="display:none;">
+    <div class="modal-dialog-box" style="width:960px; max-width:96vw;">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="upload-cloud" style="color:var(--primary)"></i>
+          <span>ADMIN TIMETABLE UPLOAD & MASTER VALIDATION</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeTimetableUploadModal()">✕</button>
+      </div>
+
+      <div class="modal-body-content" style="max-height:560px; overflow-y:auto; padding:20px;">
+        <!-- Upload Dropzone -->
+        <div class="dropzone-box" onclick="document.getElementById('tt-master-file-input').click()"
+          ondragover="event.preventDefault()" ondrop="handleTimetableDrop(event)">
+          <i data-lucide="file-spreadsheet" style="width:36px;height:36px;color:var(--primary);margin-bottom:8px;"></i>
+          <h4 style="font-size:15px; font-weight:700; color:var(--text-main);">Click or Drag & Drop Timetable File</h4>
+          <p style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">Supports Microsoft Excel
+            (<strong>.xlsx</strong>, .xls) and CSV</p>
+          <input type="file" id="tt-master-file-input" accept=".xlsx,.xls,.csv" style="display:none;"
+            onchange="onTimetableFileSelected(event)">
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:12px;">
+          <span style="color:var(--text-muted)">Required format: Day | Time | Department | Program | Year | Semester |
+            Section | Subject Code | Subject | Faculty ID | Faculty Name | Room</span>
+          <button class="btn btn-ghost btn-sm" onclick="downloadTimetableTemplate()">
+            <i data-lucide="download" style="width:12px;height:12px;"></i> Download CSV Template
+          </button>
+        </div>
+
+        <!-- Validation Progress / Summary Indicator -->
+        <div id="tt-val-summary-banner"
+          style="display:none; margin-top:16px; padding:12px 16px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong id="tt-val-status-title">Validation Complete</strong>
+              <div style="font-size:12px; color:var(--text-muted);" id="tt-val-status-desc">Checked departments,
+                programs, sections, subjects, faculty, and room schedule collisions.</div>
+            </div>
+            <div style="display:flex; gap:10px;" id="tt-val-chips-wrap">
+              <span class="val-badge ok" id="tt-val-valid-chip">0 Valid</span>
+              <span class="val-badge err" id="tt-val-error-chip">0 Errors</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Table -->
+        <div id="tt-val-preview-wrap" style="display:none; margin-top:16px;">
+          <h5 style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-main);">Timetable Parsing &
+            Error Inspection Preview:</h5>
+          <div class="table-responsive-container" style="max-height:260px; overflow-y:auto;">
+            <table class="modern-data-table" style="font-size:12px;">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Day</th>
+                  <th>Time Slot</th>
+                  <th>Dept & Program</th>
+                  <th>Class / Sec</th>
+                  <th>Subject</th>
+                  <th>Faculty</th>
+                  <th>Room</th>
+                  <th>Validation Detail</th>
+                </tr>
+              </thead>
+              <tbody id="tt-val-preview-tbody">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer-bar" style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:12px; color:var(--text-muted);" id="tt-val-footer-note">DO NOT directly import invalid
+          timetable data.</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-secondary" onclick="closeTimetableUploadModal()">Cancel</button>
+          <button class="btn btn-primary" id="btn-tt-confirm-import" onclick="confirmTimetableImport()" disabled>
+            <i data-lucide="check" style="width:14px;height:14px;"></i>
+            <span>Confirm & Import Valid Schedules</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+     MODAL: CORRECTION REQUEST (FACULTY -> ADMIN AUDIT WORKFLOW)
+     ====================================================================== -->
+  <div class="modal-backdrop-wrap" id="correction-request-modal" style="display:none;">
+    <div class="modal-dialog-box" style="width:520px;">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="alert-circle" style="color:var(--warning)"></i>
+          <span>Request Attendance Correction</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeCorrectionRequestModal()">✕</button>
+      </div>
+      <div class="modal-body-content">
+        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">
+          Because this attendance session is <strong>LOCKED</strong>, changes require administrative audit approval by
+          HOD or Dean.
+        </p>
+        <div class="form-field-group">
+          <label class="form-label">Student</label>
+          <select id="corr-student-select" class="form-select">
+            <!-- Populated from session roster -->
+          </select>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-field-group">
+            <label class="form-label">Current Status</label>
+            <input type="text" id="corr-old-status" class="form-input" value="ABSENT" readonly>
+          </div>
+          <div class="form-field-group">
+            <label class="form-label">Requested Status</label>
+            <select id="corr-new-status" class="form-select">
+              <option value="PRESENT">PRESENT</option>
+              <option value="LATE">LATE</option>
+              <option value="ABSENT">ABSENT</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field-group">
+          <label class="form-label">Official Reason / Justification</label>
+          <textarea id="corr-reason" class="form-input" rows="3"
+            placeholder="State reason (e.g. Student was present in lab; verified via on-duty slip or camera angle)"></textarea>
+        </div>
+        <div id="corr-modal-msg" style="font-size:12px; margin-top:4px;"></div>
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="closeCorrectionRequestModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCorrectionRequest()">Submit for HOD Approval</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+     MODAL: ACADEMIC ENTITY ADD/EDIT (DEPARTMENTS, PROGRAMS, SECTIONS, ETC.)
+     ====================================================================== -->
+  <div class="modal-backdrop-wrap" id="academic-entity-modal" style="display:none;">
+    <div class="modal-dialog-box" style="width:580px;">
+      <div class="modal-header-bar">
+        <div class="modal-title">
+          <i data-lucide="plus-circle" style="color:var(--primary)"></i>
+          <span id="acad-modal-title">Add Academic Entity</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeAcademicAddModal()">✕</button>
+      </div>
+      <div class="modal-body-content" id="acad-modal-body">
+        <!-- Dynamically rendered based on active tab -->
+      </div>
+      <div class="modal-footer-bar">
+        <button class="btn btn-secondary" onclick="closeAcademicAddModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAcademicEntity()">Save Master Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. TOAST NOTIFICATIONS CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- JavaScript Integration -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,34 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment & Virtualenv
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Database & SQLite files
+*.db
+*.sqlite
+*.sqlite3
+visionattend.db
+
+# Model weights, embeddings and test images
+encodings.pkl
+test_cam.jpg
+
+# Face images and personal data
+known_faces/
+attendance_logs/
+
+# Backup, duplicate archive folders
+facial_attendance_v3 (1)*
+scratch/
+
+# IDE / Editor folders
+.vscode/
+.idea/
