@@ -25,6 +25,13 @@ import re
 import socket
 from urllib.parse import quote, urlsplit
 
+# Bypass unnecessary albumentations/simsimd dependency in insightface.app.mask_renderer
+# (simsimd DLL is often blocked by Windows Defender Application Control / AppLocker)
+import sys
+import types
+if 'insightface.app.mask_renderer' not in sys.modules:
+    sys.modules['insightface.app.mask_renderer'] = types.ModuleType('insightface.app.mask_renderer')
+
 import insightface
 from insightface.app import FaceAnalysis
 import academic_core
