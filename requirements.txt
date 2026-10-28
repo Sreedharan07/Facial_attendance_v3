@@ -1,6 +1,6 @@
 flask
 gunicorn
-insightface==0.7.4
+insightface>=0.7.3
 onnxruntime
 opencv-python-headless
 numpy
