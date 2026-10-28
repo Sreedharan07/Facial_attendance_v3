@@ -1,5 +1,8 @@
 flask
+gunicorn
 insightface==0.7.4
 onnxruntime
-opencv-python
+opencv-python-headless
 numpy
+Pillow
+
