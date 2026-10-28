@@ -1798,6 +1798,48 @@ html, body {
   animation: fadeIn 0.2s ease;
 }
 
+/* Floating Non-Blocking Docked Drawer for Live Facial Enrollment */
+.modal-backdrop-wrap.modal-docked-drawer {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  pointer-events: none;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 24px 28px;
+}
+.modal-backdrop-wrap.modal-docked-drawer .docked-dialog {
+  pointer-events: auto;
+  max-width: 440px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 212, 255, 0.15);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  color: #fff;
+}
+.modal-backdrop-wrap.modal-docked-drawer .docked-dialog .form-label {
+  color: #cbd5e1;
+}
+.modal-backdrop-wrap.modal-docked-drawer .docked-dialog .form-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.modal-backdrop-wrap.modal-docked-drawer .docked-dialog .modal-header-bar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.modal-backdrop-wrap.modal-docked-drawer .docked-dialog .modal-title span {
+  color: #fff;
+  font-weight: 700;
+}
+.modal-backdrop-wrap.modal-docked-drawer .docked-dialog .modal-close-btn {
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+}
+.modal-backdrop-wrap.modal-docked-drawer .docked-dialog .modal-footer-bar {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .modal-dialog-box {
   background: var(--bg-card);
   border: 1px solid var(--border);

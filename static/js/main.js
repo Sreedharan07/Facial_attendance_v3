@@ -361,6 +361,65 @@ async function activateClientWebcam(deviceId = null, deviceLabel = ''){
   }
 }
 
+async function startWindowShare(){
+  stopClientCameraPipeline();
+  if(clientStream){
+    clientStream.getTracks().forEach(t => t.stop());
+    clientStream = null;
+  }
+
+  try {
+    // Release backend camera device so hardware locks are freed
+    try {
+      await fetch('/api/camera/pause', { method: 'POST' });
+    } catch(e){}
+
+    // Trigger Chrome / Edge / Firefox native Window / Screen picker modal
+    clientStream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        displaySurface: 'window',
+        cursor: 'never',
+        frameRate: { ideal: 30, max: 60 }
+      },
+      audio: false
+    });
+
+    useClientWebcam = true;
+    const clientVideo = document.getElementById('client-webcam');
+    const clientCanvas = document.getElementById('client-canvas');
+    const backendImg = document.getElementById('video-feed');
+    const camStatus = document.getElementById('cam-status');
+    const shareBtnLabel = document.getElementById('share-window-label');
+
+    clientVideo.srcObject = clientStream;
+    await clientVideo.play();
+
+    backendImg.style.display = 'none';
+    clientVideo.style.display = 'block';
+    clientCanvas.style.display = 'block';
+
+    const track = clientStream.getVideoTracks()[0];
+    const windowTitle = track.label || 'iVMS-4200 Window';
+    if(camStatus) camStatus.textContent = `WINDOW STREAM: ${windowTitle.toUpperCase()}`;
+    if(shareBtnLabel) shareBtnLabel.textContent = 'Stop Sharing Window';
+    triggerHud(`STREAMING WINDOW: ${windowTitle.toUpperCase()}`);
+
+    // When user clicks 'Stop sharing' from the browser banner
+    track.onended = () => {
+      if(shareBtnLabel) shareBtnLabel.textContent = 'Share iVMS Window';
+      activateBackendCamera(activeBackendCamId, activeBackendCamSrc);
+    };
+
+    startClientCameraPipeline();
+  } catch(err){
+    if(err.name !== 'NotAllowedError'){
+      console.error("Window share error:", err);
+      alert('Could not share window: ' + err.message);
+    }
+    activateBackendCamera(activeBackendCamId, activeBackendCamSrc);
+  }
+}
+
 async function activateBackendCamera(camId, camSrc = 0){
   stopClientCameraPipeline();
   if(clientStream){
@@ -510,21 +569,34 @@ function startClientCameraPipeline(){
   const canvas = document.getElementById('client-canvas');
   const ctx = canvas.getContext('2d');
 
-  // Offscreen canvas for fast base64 capture (16:9 widescreen HD)
+  // Optimized offscreen canvas for detecting 10-35 students simultaneously at exit (720x405 @ 0.70)
   const offCanvas = document.createElement('canvas');
-  offCanvas.width = 960;
-  offCanvas.height = 540;
+  offCanvas.width = 720;
+  offCanvas.height = 405;
   const offCtx = offCanvas.getContext('2d');
 
   let isSending = false;
 
-  // 60 FPS local render loop for boxes & HUD
+  let fpsCounter = 0;
+  let fpsTimer = performance.now();
+
+  // 60 FPS local render loop for video display, boxes & HUD
   function renderFrame(){
     if(!useClientWebcam) return;
     if(video.videoWidth > 0){
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      fpsCounter++;
+      const nowMs = performance.now();
+      if(nowMs - fpsTimer >= 1000){
+        const measuredFps = Math.round((fpsCounter * 1000) / (nowMs - fpsTimer));
+        const fpsEl = document.getElementById('telemetry-fps');
+        if(fpsEl) fpsEl.textContent = `⚡ ${measuredFps} FPS`;
+        fpsCounter = 0;
+        fpsTimer = nowMs;
+      }
 
       // Render designated registration range oval guide when active
       if(liveEnrolling){
@@ -556,9 +628,9 @@ function startClientCameraPipeline(){
         ctx.restore();
       }
 
-      // Draw detection boxes with accurate resolution scaling
-      const scaleX = canvas.width / 960;
-      const scaleY = canvas.height / 540;
+      // Draw detection boxes with accurate resolution scaling (matching 720x405 inference)
+      const scaleX = canvas.width / 720;
+      const scaleY = canvas.height / 405;
       for(const det of clientDetections){
         const x1 = (det.box ? det.box[0] : 0) * scaleX;
         const y1 = (det.box ? det.box[1] : 0) * scaleY;
@@ -583,13 +655,13 @@ function startClientCameraPipeline(){
   }
   clientRenderAnimFrame = requestAnimationFrame(renderFrame);
 
-  // Send frames to backend recognition model with 92% high clarity without UI blocking
+  // Send frames to backend recognition model with zero lag (720x405 @ 0.70 quality)
   clientInferInterval = setInterval(async () => {
     if(!useClientWebcam || isSending || video.videoWidth === 0) return;
     isSending = true;
     try {
-      offCtx.drawImage(video, 0, 0, 960, 540);
-      const base64Data = offCanvas.toDataURL('image/jpeg', 0.92);
+      offCtx.drawImage(video, 0, 0, 720, 405);
+      const base64Data = offCanvas.toDataURL('image/jpeg', 0.70);
       const res = await fetch('/api/process_frame', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -641,7 +713,7 @@ function startClientCameraPipeline(){
       }
     } catch(e){}
     isSending = false;
-  }, 120);
+  }, 40);
 }
 
 function stopClientCameraPipeline(){
@@ -1348,6 +1420,9 @@ async function pollStats(){
     const sideEnrolled = document.getElementById('side-stat-enrolled');
     const sidePresent = document.getElementById('side-stat-present');
     const sidePeriod = document.getElementById('side-stat-period');
+
+    const elMatchCount = document.getElementById('stat-match-count');
+    if(elMatchCount) elMatchCount.textContent = presentCount;
 
     if(elEnrolled) elEnrolled.textContent = totalEnrolled;
     if(elPresent) elPresent.textContent = presentCount;

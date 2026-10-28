@@ -2,9 +2,9 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import os
-# Hikvision / IP cameras: force RTSP over TCP (UDP drops packets → grey/smeared frames) with a 5s connect timeout.
+# Hikvision / IP cameras: force RTSP over TCP with zero-buffer, low latency flags.
 # Must be set before cv2 is imported.
-os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp|stimeout;5000000|timeout;5000000")
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|max_delay;100000|reorder_queue_size;0|stimeout;5000000|timeout;5000000"
 
 from flask import Flask, render_template, Response, jsonify, request, make_response
 import cv2
@@ -1240,17 +1240,28 @@ class VideoPipelineAgent:
     def _open_capture_device(self, src):
         """Robustly opens video device with warmup to avoid initial black frames on Windows."""
         if not isinstance(src, int):
-            # Network stream (Hikvision RTSP / HTTP): FFMPEG backend, no resolution/FOURCC forcing
-            try:
-                cap = cv2.VideoCapture(src, cv2.CAP_FFMPEG)
-                if cap.isOpened():
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-                    ret, f = cap.read()
-                    if ret and f is not None:
-                        return cap
-                cap.release()
-            except Exception:
-                pass
+            # Network stream (Hikvision RTSP / HTTP): FFMPEG backend
+            for backend in [cv2.CAP_FFMPEG, cv2.CAP_ANY]:
+                try:
+                    cap = cv2.VideoCapture(src, backend)
+                    if cap.isOpened():
+                        try:
+                            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                        except Exception:
+                            pass
+                        # Discard first few partial frames until an I-frame/keyframe arrives (prevents gray washout)
+                        valid_frame = None
+                        for _ in range(15):
+                            ret, f = cap.read()
+                            if ret and f is not None and f.std() > 10:
+                                valid_frame = f
+                                break
+                            time.sleep(0.02)
+                        if valid_frame is not None:
+                            return cap
+                    cap.release()
+                except Exception:
+                    pass
             return None
 
         if isinstance(src, int):
@@ -1258,13 +1269,13 @@ class VideoPipelineAgent:
         else:
             backends = [cv2.CAP_ANY]
 
-        target_resolutions = [(1280, 720), (640, 480)]
+        target_resolutions = [(640, 480), (1280, 720)]
 
         def _warmup_and_verify(cap, num_warmup=8):
             """Read and discard warmup frames, then verify a non-black frame."""
             for _ in range(num_warmup):
                 cap.read()  # discard warmup frames (often black on Windows)
-                time.sleep(0.03)
+                time.sleep(0.01)
             ret, f = cap.read()
             if ret and f is not None and f.shape[0] > 10 and f.shape[1] > 10:
                 # Check the frame isn't completely black (mean brightness > 2)
@@ -1285,7 +1296,7 @@ class VideoPipelineAgent:
                             pass
                         cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
                         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
-                        cap.set(cv2.CAP_PROP_FPS, 30)
+                        cap.set(cv2.CAP_PROP_FPS, 60)
                         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                         if _warmup_and_verify(cap):
                             return cap
@@ -1306,7 +1317,7 @@ class VideoPipelineAgent:
                         pass
                     cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
                     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
-                    cap.set(cv2.CAP_PROP_FPS, 30)
+                    cap.set(cv2.CAP_PROP_FPS, 60)
                     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                     if _warmup_and_verify(cap):
                         return cap
@@ -1512,9 +1523,16 @@ class VideoPipelineAgent:
                         fps_count = 0
                         fps_t0 = now
 
-                    # Ultra-high-bitrate JPEG encoding (Quality 96, pristine sharpness, zero compression artifacts)
-                    rendered = self._render_frame(f.copy())
-                    ret, buf = cv2.imencode(".jpg", rendered, [int(cv2.IMWRITE_JPEG_QUALITY), 96])
+                    # Crisp HD downscale if incoming RTSP frame is massive (preserving aspect ratio)
+                    h_f, w_f = f.shape[:2]
+                    if w_f > 1280:
+                        f_disp = cv2.resize(f, (1280, int(h_f * (1280.0 / w_f))), interpolation=cv2.INTER_LINEAR)
+                    else:
+                        f_disp = f.copy()
+
+                    # High-definition JPEG encoding (Quality 90 for crisp recognition & UI text)
+                    rendered = self._render_frame(f_disp)
+                    ret, buf = cv2.imencode(".jpg", rendered, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
 
                     with self.frame_cond:
                         self.latest_frame = f
@@ -1680,34 +1698,23 @@ class VideoPipelineAgent:
                     current_detected_names = set()
 
                     # Scalable multi-person crowd tracking (minimum 5, tracks up to 20 people simultaneously)
-                    if len(faces) > 20:
-                        faces = sorted(faces, key=lambda f: (f.bbox[2]-f.bbox[0]) * (f.bbox[3]-f.bbox[1]), reverse=True)[:20]
+                    # Scalable multi-person crowd tracking (up to 35 people simultaneously)
+                    if len(faces) > 35:
+                        faces = sorted(faces, key=lambda f: (f.bbox[2]-f.bbox[0]) * (f.bbox[3]-f.bbox[1]), reverse=True)[:35]
 
                     raw_detections = []
                     for face in faces:
                         box = face.bbox.astype(int)
                         x1, y1 = max(0, box[0]), max(0, box[1])
                         x2, y2 = min(w, box[2]), min(h, box[3])
-                        crop = frame[y1:y2, x1:x2]
                         det_score = float(face.det_score)
 
-                        is_live, sharpness, _ = check_liveness_and_quality(crop)
-                        if not is_live or det_score < MIN_DET_SCORE:
+                        # High sensitivity for classroom CCTV (score >= 0.35, relaxed for distant faces)
+                        if det_score < 0.35:
                             continue
 
                         emb = face.normed_embedding
                         name, conf, raw_sim = tiered_identify_face(emb)
-
-                        # Backlit / Shadow recovery: if unrecognized or low similarity, test CLAHE enhanced chip
-                        if name == "Unknown" and raw_sim < 0.45 and crop.size > 0:
-                            enh_crop = enhance_face_chip(crop)
-                            with model_lock:
-                                enh_faces = face_app.get(enh_crop)
-                            if enh_faces:
-                                e_name, e_conf, e_sim = tiered_identify_face(enh_faces[0].normed_embedding)
-                                if e_sim > raw_sim:
-                                    name, conf, raw_sim = e_name, e_conf, e_sim
-
                         meta = get_student_info(name)
                         raw_detections.append({
                             "box": [x1, y1, x2, y2],
@@ -1829,7 +1836,7 @@ def gen_frames():
             jpeg_bytes = None
             with video_agent.frame_cond:
                 if video_agent.frame_id == last_frame_id or video_agent.latest_encoded is None:
-                    video_agent.frame_cond.wait(timeout=0.04)
+                    video_agent.frame_cond.wait(timeout=0.016)  # ~60 fps frame wait
                 if video_agent.frame_id != last_frame_id and video_agent.latest_encoded is not None:
                     last_frame_id = video_agent.frame_id
                     jpeg_bytes = video_agent.latest_encoded
@@ -1837,7 +1844,7 @@ def gen_frames():
             if jpeg_bytes is not None:
                 yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg_bytes + b"\r\n")
             else:
-                time.sleep(0.01)
+                time.sleep(0.002)
     except (GeneratorExit, ConnectionResetError, BrokenPipeError):
         pass
 
@@ -1845,6 +1852,11 @@ def gen_frames():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route("/live_feed")
+def live_feed_display():
+    """Dedicated full-screen Live Recognition Display screen for System 1 / secondary monitor."""
+    return render_template("live_display.html")
 
 @app.route("/video_feed")
 def video_feed():
@@ -2333,34 +2345,23 @@ def process_client_frame():
                                 record_event("ENROLLMENT_EVENT", enrollment_state["name"], active_camera_id,
                                              f"Enrolled {enrollment_state['name']} · Reg: {enrollment_state['reg_no']} · Class: {enrollment_state['class_name']} ({enrollment_state['target_frames']} samples)")
 
-        # Scalable multi-person crowd tracking (minimum 5, tracks up to 20 people simultaneously)
-        if len(faces) > 20:
-            faces = sorted(faces, key=lambda f: (f.bbox[2]-f.bbox[0]) * (f.bbox[3]-f.bbox[1]), reverse=True)[:20]
+        # Scalable multi-person crowd tracking (up to 35 people simultaneously for exit/doorway crowd monitoring)
+        if len(faces) > 35:
+            faces = sorted(faces, key=lambda f: (f.bbox[2]-f.bbox[0]) * (f.bbox[3]-f.bbox[1]), reverse=True)[:35]
 
         raw_detections = []
         for face in faces:
             box = face.bbox.astype(int)
             x1, y1 = max(0, box[0]), max(0, box[1])
             x2, y2 = min(w, box[2]), min(h, box[3])
-            crop = frame[y1:y2, x1:x2]
             det_score = float(face.det_score)
 
-            is_live, sharpness, _ = check_liveness_and_quality(crop)
-            if not is_live or det_score < MIN_DET_SCORE:
+            # High sensitivity for classroom CCTV (score >= 0.35, bypass strict desktop liveness)
+            if det_score < 0.35:
                 continue
 
             emb = face.normed_embedding
             name, conf, raw_sim = tiered_identify_face(emb)
-
-            if name == "Unknown" and raw_sim < 0.45 and crop.size > 0:
-                enh_crop = enhance_face_chip(crop)
-                with model_lock:
-                    enh_faces = face_app.get(enh_crop)
-                if enh_faces:
-                    e_name, e_conf, e_sim = tiered_identify_face(enh_faces[0].normed_embedding)
-                    if e_sim > raw_sim:
-                        name, conf, raw_sim = e_name, e_conf, e_sim
-
             meta = get_student_info(name)
             raw_detections.append({
                 "box": [int(x1), int(y1), int(x2), int(y2)],

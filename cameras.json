@@ -1,0 +1,74 @@
+[
+  {
+    "id": "rtsp://172.31.9.2:554/Streaming/Channels/4501",
+    "label": "rtsp://172.31.9.2:554/Streaming/Channels/4501 (rtsp://admin:***@172.31.9.2:554/Streaming/Channels/101)",
+    "src": "rtsp://admin:Srmvdp%402026@172.31.9.2:554/Streaming/Channels/101",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "Hikvision 172.31.9.2 \u00b7 channel 1",
+    "custom": true
+  },
+  {
+    "id": "Indoor",
+    "label": "Indoor (rtsp://admin:***@2026@172.31.9.2:554/Streaming/Channels/4501)",
+    "src": "rtsp://admin:Srmvdp@2026@172.31.9.2:554/Streaming/Channels/4501",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "External / Presentation Camera",
+    "custom": true
+  },
+  {
+    "id": "VLC_Stream",
+    "label": "VLC HTTP Stream (http://localhost:8000/stream)",
+    "src": "http://localhost:8000/stream",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "VLC HTTP Screen Stream",
+    "custom": true
+  },
+  {
+    "id": "External Classroom Cam",
+    "label": "External Classroom Cam (rtsp://Test:***@2026@172.31.9.5:554/Streaming/Channels/101)",
+    "src": "rtsp://Test:Srmvdp@2026@172.31.9.5:554/Streaming/Channels/101",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "External / Presentation Camera",
+    "custom": true
+  },
+  {
+    "id": "External classroom cam",
+    "label": "External classroom cam (rtsp://Test:***@172.31.9.5:554/Streaming/Channels/102)",
+    "src": "rtsp://Test:Srmvdp%402026@172.31.9.5:554/Streaming/Channels/102",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "Hikvision 172.31.9.5 \u00b7 channel 1",
+    "custom": true
+  },
+  {
+    "id": "Indoor Classroom cam",
+    "label": "Indoor Classroom cam (rtsp://Test:***@2026@172.31.9.2:554/Streaming/Channels/4501)",
+    "src": "rtsp://Test:Srmvdp@2026@172.31.9.2:554/Streaming/Channels/4501",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "External / Presentation Camera",
+    "custom": true
+  },
+  {
+    "id": "Indoor Classroom Cam (High FPS)",
+    "label": "Indoor Classroom Cam (Sub-stream 60 FPS)",
+    "src": "rtsp://Test:Srmvdp@2026@172.31.9.2:554/Streaming/Channels/4502",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "Hikvision 172.31.9.2 High FPS Sub-stream",
+    "custom": true
+  },
+  {
+    "id": "OUTSIDE CLASSROOM CAMERA",
+    "label": "OUTSIDE CLASSROOM CAMERA (rtsp://Test:***@2026@172.31.9.5:8000/Streaming/Channels/4501)",
+    "src": "rtsp://Test:Srmvdp@2026@172.31.9.5:8000/Streaming/Channels/4501",
+    "type": "IP_STREAM",
+    "status": "CONFIGURED",
+    "desc": "External / Presentation Camera",
+    "custom": true
+  }
+]
